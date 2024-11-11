@@ -1,0 +1,63 @@
+/* #FF6600 Fiserv Orange */
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    flex-direction: column;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.window {
+    position: absolute;
+    width: 400px;
+    height: 300px;
+    border: 2px solid #FF6600;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    resize: both;
+    overflow: auto;
+}
+
+.window-header {
+    display: flex;
+    justify-content: space-between;
+    background-color: #FF6600;
+    color: white;
+    align-items: center;
+    padding: 5px;
+    cursor: move;
+}
+
+
+.window-controls {
+    display: flex;
+}
+
+.button {
+    margin: 0 2px;
+    padding: 2px 8px;
+    cursor: pointer;
+    border: none;
+    background: #FF6600;
+    color: white;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+.window-content{
+    padding: 10px;
+}
+
+.hidden {
+    display: none;
+}

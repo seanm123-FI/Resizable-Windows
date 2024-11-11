@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resizable Window</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <button id="createWindowButton">Create Window</button>
+
+    <template id="window-template">
+        <div class="window">
+            <div class="window-header">
+                <span id="window-header-title">My Window</span>
+                <div class="window-controls">
+                    <button class="button close-button">X</button>
+                    <button class="button extend-button">[ ]</button>
+                    <button class="button collapse-button">-</button>
+                </div>
+            </div>
+            <div class="window-content"> <p>This is a resizeable window.</p>
+            </div>
+        </div>
+    </template>
+
+    <script src="script.js"></script>
+</body>
+</html>
