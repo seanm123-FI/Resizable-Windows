@@ -8,14 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const windowElement = createWindowElement();
         document.body.appendChild(windowElement);
         addWindowEventListeners(windowElement);
+        makeWindowResizable(windowElement);
     }
 
     function createWindowElement() {
        
         const windowElement = document.importNode(windowTemplate.content, true).querySelector('.window');
         windowElement.style.position = 'absolute';
-        windowElement.style.left = '150px';
-        windowElement.style.top = '270px';
+        windowElement.style.left = '700px';
+        windowElement.style.top = '300px';
+        windowElement.style.width = '400px';  // Default width
+        windowElement.style.height = '300px'; // Default height
         return windowElement;
 
     }
@@ -128,5 +131,105 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         windowElement.querySelector('.window-header').addEventListener('mousedown', onMouseDown);
+    }
+
+    function makeWindowResizable(windowElement) {
+        const resizers = windowElement.querySelectorAll('.resizer');
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
+        const minWidth = 180;
+        const minHeight = 40;
+
+        const onMouseDown = (event) => {
+            isResizing = true;
+            startX = event.clientX;
+            startY = event.clientY;
+            startWidth = parseInt(windowElement.style.width, 10);
+            startHeight = parseInt(windowElement.style.height, 10);
+            startLeft = parseInt(windowElement.style.left, 10);
+            startTop = parseInt(windowElement.style.top, 10);
+            resizer = event.target;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+
+        const onMouseMove = (event) => {
+            if (!isResizing) return;
+            const dx = event.clientX - startX;
+            const dy = event.clientY - startY;
+
+            switch (resizer.className.baseVal) {
+                case 'resizer top-left':
+                    const newWidthTopLeft = startWidth - dx;
+                    const newHeightTopLeft = startHeight - dy;
+
+                    if (newWidthTopLeft > minWidth) {
+                        windowElement.style.width = `${newWidthTopLeft}px`;
+                        windowElement.style.left = `${startLeft + dx}px`;
+                    }
+
+                    if (newHeightTopLeft > minHeight) {
+                        windowElement.style.height = `${newHeightTopLeft}px`;
+                        windowElement.style.top = `${startTop + dy}px`;
+                    }
+
+                    break;
+
+                case 'resizer top-right':
+                    const newWidthTopRight = startWidth + dx;
+                    const newHeightTopRight = startHeight - dy;
+
+                    if(newWidthTopRight > minWidth){
+                        windowElement.style.width = `${newWidthTopRight}px`;
+                    }
+
+                    if(newHeightTopRight > minHeight){
+                        windowElement.style.height = `${newHeightTopRight}px`;
+                        windowElement.style.top = `${startTop + dy}px`
+                    }
+
+                    break;
+
+                case 'resizer bottom-left':
+
+                const newWidthBottomLeft = startWidth - dx;
+                const newHeightBottomLeft = startHeight + dy;
+
+                if (newWidthBottomLeft > minWidth) {
+                    windowElement.style.width = `${newWidthBottomLeft}px`;
+                    windowElement.style.left = `${startLeft + dx}px`;
+                }
+
+                if (newHeightBottomLeft > minHeight) {
+                    windowElement.style.height = `${newHeightBottomLeft}px`;
+                }
+
+                    break;
+
+                case 'resizer bottom-right':
+                    const newWidthBottomRight = startWidth + dx;
+                    const newHeightBottomRight = startHeight + dy;
+
+                    if (newWidthBottomRight > minWidth) {
+                        windowElement.style.width = `${newWidthBottomRight}px`;
+                    }
+                    if (newHeightBottomRight > minHeight){
+                        windowElement.style.height = `${newHeightBottomRight}px`;
+                    }
+
+                    break;               
+            }
+        };
+
+
+        const onMouseUp = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        resizers.forEach(resizer => {
+            resizer.addEventListener('mousedown', onMouseDown);
+        });
     }
 });
