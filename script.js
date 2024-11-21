@@ -1,3 +1,5 @@
+let zIndexCounter = 1000;  // Initial z-index value
+
 document.addEventListener('DOMContentLoaded', () => {
     const createWindowButton = document.getElementById('createWindowButton');
     const windowTemplate = document.getElementById('window-template');
@@ -6,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createWindow() {
         const windowElement = createWindowElement();
+        windowElement.style.zIndex = zIndexCounter++; 
         document.body.appendChild(windowElement);
         addWindowEventListeners(windowElement);
         makeWindowResizable(windowElement);
@@ -15,8 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
        
         const windowElement = document.importNode(windowTemplate.content, true).querySelector('.window');
         windowElement.style.position = 'absolute';
-        windowElement.style.left = '700px';
-        windowElement.style.top = '300px';
+        windowElement.style.left = '400px';
+        windowElement.style.top = '200px';
         windowElement.style.width = '400px';  // Default width
         windowElement.style.height = '300px'; // Default height
         return windowElement;
@@ -44,6 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Make the window draggable
         makeWindowDraggable(windowElement);
+
+        // Bring the window to the front when clicked
+        windowElement.addEventListener('mousedown', () => {
+            windowElement.style.zIndex = zIndexCounter++;
+        });
     }
 
     function closeWindow(windowElement) {
@@ -137,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const resizers = windowElement.querySelectorAll('.resizer');
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
-        const minWidth = 180;
-        const minHeight = 40;
+        const minWidth = 220;
+        const minHeight = 100;
 
         const onMouseDown = (event) => {
             isResizing = true;
