@@ -19,10 +19,10 @@ button {
     position: absolute;
     width: 400px;
     height: 300px;
-    border: 2px solid #FF6600;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border: 3px solid #FF6600; /* Border for the entire window */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box-shadow */
     background-color: white;
-    overflow: auto;
+    overflow: auto; /* To handle overflowing content */
 }
 
 .window-header {
@@ -34,6 +34,12 @@ button {
     padding: 5px;
     cursor: move;
     user-select: none;
+    height: 30px;
+    border: 3px solid #FF6600; /* Add 3px borders */
+    position: absolute;
+    left: 5px; /* Adjust position */
+    right: 5px; /* Adjust position */
+    top: 5px; /* Adjust position */
 }
 
 .window-controls {
@@ -54,6 +60,12 @@ button {
 
 .window-content {
     padding: 10px;
+    border: 3px solid #FF6600; /* Add 3px borders */
+    position: absolute;
+    left: 5px; /* Adjust position */
+    right: 5px; /* Adjust position */
+    top: 36px; /* Adjust position to be below header */
+    bottom: 5px; /* Adjust position */
 }
 
 .hidden {
@@ -63,9 +75,10 @@ button {
 /* Resizer styles */
 .resizer {
     position: absolute;
-    z-index: 10;
+    z-index: 100;
     width: 20px;
     height: 20px;
+    
     cursor: pointer;
 }
 
@@ -91,4 +104,50 @@ button {
     bottom: 0px;
     right: 0px;
     cursor: nwse-resize;
+}
+
+/* border resizer style */
+.border-resizer {
+    z-index: 10;
+    position: absolute;
+}
+
+/* Border resizers */
+.border-resizer.horizontal {
+    height: 5px;
+    left: 0;
+    right: 0;
+    background-color: transparent;
+}
+
+.border-resizer.vertical {
+    width: 5px;
+    top: 0;
+    bottom: 0;
+    background-color: transparent;
+}
+
+.border-resizer.top {
+    top: 0px;
+    cursor: ns-resize;
+}
+
+.border-resizer.right {
+    right: 0px;
+    cursor: ew-resize;
+}
+
+.border-resizer.bottom {
+    bottom: -0px; 
+    cursor: ns-resize;
+}
+
+.border-resizer.left {
+    left: -0px;
+    cursor: ew-resize;
+}
+
+/* Highlight active resizer */
+ .border-resizer:hover {
+    background-color: #F4C430;
 }
