@@ -106,13 +106,12 @@ button {
     cursor: nwse-resize;
 }
 
-/* border resizer style */
-.border-resizer {
+
+ .border-resizer {
     z-index: 10;
     position: absolute;
 }
 
-/* Border resizers */
 .border-resizer.horizontal {
     height: 5px;
     left: 0;
@@ -125,7 +124,7 @@ button {
     top: 0;
     bottom: 0;
     background-color: transparent;
-}
+} 
 
 .border-resizer.top {
     top: 0px;
@@ -138,12 +137,12 @@ button {
 }
 
 .border-resizer.bottom {
-    bottom: -0px; 
+    bottom: 0px; 
     cursor: ns-resize;
 }
 
 .border-resizer.left {
-    left: -0px;
+    left: 0px;
     cursor: ew-resize;
 }
 
