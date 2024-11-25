@@ -97,13 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
         windowContent.classList.remove('hidden');
         windowElement.style.width = initialState.width;
         windowElement.style.height = initialState.height;
+     
+
     }
 
     function collapseWindow(windowElement, windowContent, initialState) {
         initialState.width = windowElement.style.width;
         initialState.height = windowElement.style.height;
-        windowElement.style.width = '180px';
-        windowElement.style.height = '40px';
+        windowElement.style.width = '220px';
+        windowElement.style.height = '150px';
         windowContent.classList.add('hidden');
     }
 
