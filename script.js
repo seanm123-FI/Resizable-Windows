@@ -8,14 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createWindow() {
         const windowElement = createWindowElement();
-        windowElement.style.zIndex = zIndexCounter++; 
+        windowElement.style.zIndex = zIndexCounter++;
         document.body.appendChild(windowElement);
         addWindowEventListeners(windowElement);
         makeWindowResizable(windowElement);
+        makeWindowBordersResizable(windowElement);
     }
 
     function createWindowElement() {
-       
         const windowElement = document.importNode(windowTemplate.content, true).querySelector('.window');
         windowElement.style.position = 'absolute';
         windowElement.style.left = '400px';
@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
         windowElement.style.width = '400px';  // Default width
         windowElement.style.height = '300px'; // Default height
         return windowElement;
-
     }
 
     function addWindowEventListeners(windowElement) {
@@ -187,30 +186,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     const newWidthTopRight = startWidth + dx;
                     const newHeightTopRight = startHeight - dy;
 
-                    if(newWidthTopRight > minWidth){
+                    if (newWidthTopRight > minWidth) {
                         windowElement.style.width = `${newWidthTopRight}px`;
                     }
 
-                    if(newHeightTopRight > minHeight){
+                    if (newHeightTopRight > minHeight) {
                         windowElement.style.height = `${newHeightTopRight}px`;
-                        windowElement.style.top = `${startTop + dy}px`
+                        windowElement.style.top = `${startTop + dy}px`;
                     }
 
                     break;
 
                 case 'resizer bottom-left':
 
-                const newWidthBottomLeft = startWidth - dx;
-                const newHeightBottomLeft = startHeight + dy;
+                    const newWidthBottomLeft = startWidth - dx;
+                    const newHeightBottomLeft = startHeight + dy;
 
-                if (newWidthBottomLeft > minWidth) {
-                    windowElement.style.width = `${newWidthBottomLeft}px`;
-                    windowElement.style.left = `${startLeft + dx}px`;
-                }
+                    if (newWidthBottomLeft > minWidth) {
+                        windowElement.style.width = `${newWidthBottomLeft}px`;
+                        windowElement.style.left = `${startLeft + dx}px`;
+                    }
 
-                if (newHeightBottomLeft > minHeight) {
-                    windowElement.style.height = `${newHeightBottomLeft}px`;
-                }
+                    if (newHeightBottomLeft > minHeight) {
+                        windowElement.style.height = `${newHeightBottomLeft}px`;
+                    }
 
                     break;
 
@@ -221,14 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (newWidthBottomRight > minWidth) {
                         windowElement.style.width = `${newWidthBottomRight}px`;
                     }
-                    if (newHeightBottomRight > minHeight){
+                    if (newHeightBottomRight > minHeight) {
                         windowElement.style.height = `${newHeightBottomRight}px`;
                     }
 
-                    break;               
+                    break;
             }
         };
-
 
         const onMouseUp = () => {
             isResizing = false;
@@ -238,6 +236,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
         resizers.forEach(resizer => {
             resizer.addEventListener('mousedown', onMouseDown);
+        });
+    }
+
+    function makeWindowBordersResizable(windowElement) {
+        const borderResizers = windowElement.querySelectorAll('.border-resizer');
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight, startLeft, startTop, borderResizer;
+        const minWidth = 220;
+        const minHeight = 100;
+
+        const onMouseDown = (event) => {
+            isResizing = true;
+            startX = event.clientX;
+            startY = event.clientY;
+            startWidth = parseInt(windowElement.style.width, 10);
+            startHeight = parseInt(windowElement.style.height, 10);
+            startLeft = parseInt(windowElement.style.left, 10);
+            startTop = parseInt(windowElement.style.top, 10);
+            borderResizer = event.target;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+
+        const onMouseMove = (event) => {
+            if (!isResizing) return;
+            const dx = event.clientX - startX;
+            const dy = event.clientY - startY;
+
+            switch (borderResizer.classList[1]) {
+                case 'top':
+                    const newHeightTop = startHeight - dy;
+                    if (newHeightTop > minHeight) {
+                        windowElement.style.height = `${newHeightTop}px`;
+                        windowElement.style.top = `${startTop + dy}px`;
+                    }
+                    break;
+
+                case 'bottom':
+                    const newHeightBottom = startHeight + dy;
+                    if (newHeightBottom > minHeight) {
+                        windowElement.style.height = `${newHeightBottom}px`;
+                    }
+                    break;
+
+                case 'left':
+                    const newWidthLeft = startWidth - dx;
+                    if (newWidthLeft > minWidth) {
+                        windowElement.style.width = `${newWidthLeft}px`;
+                        windowElement.style.left = `${startLeft + dx}px`;
+                    }
+                    break;
+
+                case 'right':
+                    const newWidthRight = startWidth + dx;
+                    if (newWidthRight > minWidth) {
+                        windowElement.style.width = `${newWidthRight}px`;
+                    }
+                    break;
+            }
+        };
+
+        const onMouseUp = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        borderResizers.forEach(borderResizer => {
+            borderResizer.addEventListener('mousedown', onMouseDown);
         });
     }
 });
