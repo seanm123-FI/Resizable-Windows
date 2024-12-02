@@ -1,6 +1,7 @@
-let zIndexCounter = 1000;  // Initial z-index value
+let zIndexCounter = 1000; // Initial z-index value
+let allWindows = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => { 
     const createWindowButton = document.getElementById('createWindowButton');
     const windowTemplate = document.getElementById('window-template');
 
@@ -10,7 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const windowElement = createWindowElement();
         windowElement.style.zIndex = zIndexCounter++;
         document.body.appendChild(windowElement);
-        addWindowEventListeners(windowElement);
+
+        const windowState = {
+            windowElement,
+            state: 'normal',
+            initialPosition: {
+                width: windowElement.style.width,
+                height: windowElement.style.height,
+                left: windowElement.style.left,
+                top: windowElement.style.top
+            }
+        };
+
+        allWindows.push(windowState);
+        addWindowEventListeners(windowElement, windowState);
+        makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
     }
@@ -25,29 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return windowElement;
     }
 
-    function addWindowEventListeners(windowElement) {
+    function addWindowEventListeners(windowElement, windowState) {
         const closeButton = windowElement.querySelector('.close-button');
         const extendButton = windowElement.querySelector('.extend-button');
         const collapseButton = windowElement.querySelector('.collapse-button');
         const windowContent = windowElement.querySelector('.window-content');
 
-        // Save initial size and position
-        const initialState = {
-            width: windowElement.style.width,
-            height: windowElement.style.height,
-            left: windowElement.style.left,
-            top: windowElement.style.top
-        };
-
-        // Add button event listeners
         closeButton.addEventListener('click', () => closeWindow(windowElement));
-        extendButton.addEventListener('click', () => toggleExtendWindow(windowElement, initialState));
-        collapseButton.addEventListener('click', () => toggleCollapseWindow(windowElement, windowContent, initialState));
+        extendButton.addEventListener('click', () => toggleExtendWindow(windowElement, windowState));
+        collapseButton.addEventListener('click', () => toggleCollapseWindow(windowElement, windowContent, windowState));
 
-        // Make the window draggable
         makeWindowDraggable(windowElement);
 
-        // Bring the window to the front when clicked
         windowElement.addEventListener('mousedown', () => {
             windowElement.style.zIndex = zIndexCounter++;
         });
@@ -55,65 +59,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeWindow(windowElement) {
         windowElement.remove();
+        allWindows = allWindows.filter(win => win.windowElement !== windowElement);
     }
 
-    function toggleExtendWindow(windowElement, initialState) {
-        if (windowElement.style.width === '100%' && windowElement.style.height === '100%') {
-            restoreWindow(windowElement, initialState);
+    function toggleExtendWindow(windowElement, windowState) {
+        if (windowState.state === 'maximized') {
+            restoreWindow(windowElement, windowState);
         } else {
-            extendWindow(windowElement, initialState);
+            extendWindow(windowElement, windowState);
         }
     }
 
-    function restoreWindow(windowElement, initialState) {
-        windowElement.style.width = initialState.width;
-        windowElement.style.height = initialState.height;
-        windowElement.style.left = initialState.left;
-        windowElement.style.top = initialState.top;
+    function restoreWindow(windowElement, windowState) {
+        windowElement.style.width = windowState.initialPosition.width;
+        windowElement.style.height = windowState.initialPosition.height;
+        windowElement.style.left = windowState.initialPosition.left;
+        windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
+        windowState.state = 'normal';
+
+        // Restore content usability
+        const windowContent = windowElement.querySelector('.window-content');
+        windowContent.classList.remove('hidden');
+        windowContent.style.pointerEvents = 'auto';
+
+        // Re-enable functionalities
+        makeWindowDraggable(windowElement);
+        makeWindowResizable(windowElement);
+        makeWindowBordersResizable(windowElement);
     }
 
-    function extendWindow(windowElement, initialState) {
-        initialState.width = windowElement.style.width;
-        initialState.height = windowElement.style.height;
-        initialState.left = windowElement.style.left;
-        initialState.top = windowElement.style.top;
-        windowElement.style.width = '100%';
-        windowElement.style.height = '100%';
+    function extendWindow(windowElement, windowState) {
+        windowState.initialPosition.width = windowElement.style.width;
+        windowState.initialPosition.height = windowElement.style.height;
+        windowState.initialPosition.left = windowElement.style.left;
+        windowState.initialPosition.top = windowElement.style.top;
+        windowElement.style.width = '99%';
+        windowElement.style.height = '99%';
         windowElement.style.left = '0';
         windowElement.style.top = '0';
         windowElement.style.position = 'fixed';
+        windowState.state = 'maximized';
+        disableWindowDraggable(windowElement);
+        disableWindowResizable(windowElement);
+        const windowContent = windowElement.querySelector('.window-content');
+        windowContent.style.pointerEvents = 'none';
     }
 
-    function toggleCollapseWindow(windowElement, windowContent, initialState) {
-        if (windowContent.classList.contains('hidden')) {
-            restoreCollapsedWindow(windowElement, windowContent, initialState);
-        } else {
-            collapseWindow(windowElement, windowContent, initialState);
-        }
+    // Disable dragging of the window by setting the header cursor and removing the mousedown event listener.
+    function disableWindowDraggable(windowElement) {
+        const header = windowElement.querySelector('.window-header');
+        header.style.cursor = 'default';
+        header.onmousedown = null;
     }
 
-    function restoreCollapsedWindow(windowElement, windowContent, initialState) {
+    // Disable resizing functionality by hiding the resizers.
+    function disableWindowResizable(windowElement) {
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        resizers.forEach(resizer => {
+            resizer.style.display = 'none';
+        });
+    }
+
+    function toggleCollapseWindow(windowElement, windowContent, windowState) {
+        windowState.state === 'collapsed' ? restoreCollapsedWindow(windowElement, windowContent, windowState) : collapseWindow(windowElement, windowContent, windowState);
+
+        // Disable content usability when minimized
+        windowContent.style.pointerEvents = windowState.state === 'collapsed' ? 'none' : 'auto';
+    }
+
+    function restoreCollapsedWindow(windowElement, windowContent, windowState) {
         windowContent.classList.remove('hidden');
-        windowElement.style.width = initialState.width;
-        windowElement.style.height = initialState.height;
-     
-
+        windowElement.style.width = windowState.initialPosition.width;
+        windowElement.style.height = windowState.initialPosition.height;
+        windowState.state = 'normal';
+        makeWindowDraggable(windowElement);
+        makeWindowResizable(windowElement);
     }
 
-    function collapseWindow(windowElement, windowContent, initialState) {
-        initialState.width = windowElement.style.width;
-        initialState.height = windowElement.style.height;
+    function collapseWindow(windowElement, windowContent, windowState) {
+        windowState.initialPosition.width = windowElement.style.width;
+        windowState.initialPosition.height = windowElement.style.height;
         windowElement.style.width = '220px';
-        windowElement.style.height = '150px';
+        windowElement.style.height = '60px';
         windowContent.classList.add('hidden');
+        windowState.state = 'collapsed';
+        windowContent.style.pointerEvents = 'none';
+        disableWindowResizable(windowElement);
     }
 
     function makeWindowDraggable(windowElement) {
         let isDragging = false, startX, startY, startLeft, startTop;
 
         const onMouseDown = (event) => {
-            if (event.target.closest('.window-header')) {
+            if (event.target.closest('.window-header') && windowElement.style.position !== 'fixed') {
                 isDragging = true;
                 startX = event.clientX;
                 startY = event.clientY;
@@ -139,7 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.removeEventListener('mouseup', onMouseUp);
         };
 
-        windowElement.querySelector('.window-header').addEventListener('mousedown', onMouseDown);
+        const header = windowElement.querySelector('.window-header');
+        header.onmousedown = onMouseDown;
+        header.style.cursor = 'move';  // Change cursor to indicate draggable
     }
 
     function makeWindowResizable(windowElement) {
@@ -150,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const minHeight = 100;
 
         const onMouseDown = (event) => {
+            if (windowElement.style.position === 'fixed') return;
             isResizing = true;
             startX = event.clientX;
             startY = event.clientY;
@@ -200,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
 
                 case 'resizer bottom-left':
-
                     const newWidthBottomLeft = startWidth - dx;
                     const newHeightBottomLeft = startHeight + dy;
 
@@ -237,7 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         resizers.forEach(resizer => {
-            resizer.addEventListener('mousedown', onMouseDown);
+            resizer.style.display = 'block';  // Ensure visibility of resizers
+            resizer.onmousedown = onMouseDown;
         });
     }
 
@@ -306,7 +348,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         borderResizers.forEach(borderResizer => {
-            borderResizer.addEventListener('mousedown', onMouseDown);
+            borderResizer.style.display = 'block';  // Ensure visibility of resizers
+            borderResizer.onmousedown = onMouseDown;
         });
     }
 });
