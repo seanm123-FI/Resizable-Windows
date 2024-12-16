@@ -3,16 +3,39 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    width: 100vh;
     margin: 0;
+    padding: 0;
+    overflow: hidden;
     font-family: Arial, sans-serif;
     flex-direction: column;
 }
 
-button {
+.button {
     padding: 10px 20px;
     margin: 20px;
     font-size: 16px;
     cursor: pointer;
+}
+
+.toolbar {
+    width: 100%;
+    padding: 10px;
+    background-color: #f1f1f1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 2000;
+}
+
+.toolbar input {
+    margin-right: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .window {
@@ -22,7 +45,8 @@ button {
     border: 3px solid #FF6600; /* Border for the entire window */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box-shadow */
     background-color: white;
-    overflow: auto; /* To handle overflowing content */
+    margin-top: 50px; /* avoids toolbar */
+    
 }
 
 .window-header {
