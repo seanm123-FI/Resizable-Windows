@@ -29,10 +29,11 @@ body {
     align-items: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 2000;
+    user-select: none;
+    gap: 20px;
 }
 
 .toolbar input {
-    margin-right: 10px;
     padding: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -46,7 +47,6 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box-shadow */
     background-color: white;
     margin-top: 50px; /* avoids toolbar */
-    
 }
 
 .window-header {
@@ -100,38 +100,37 @@ body {
 .resizer {
     position: absolute;
     z-index: 100;
-    width: 20px;
-    height: 20px;
+    width: 20px;  /* Visual size */
+    height: 20px; /* Visual size */
     
-    cursor: pointer;
+    background-color: transparent;
 }
 
 .resizer.top-left {
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
     cursor: nwse-resize;
 }
 
 .resizer.top-right {
-    top: 0px;
-    right: 0px;
+    top: 0;
+    right: 0;
     cursor: nesw-resize;
 }
 
 .resizer.bottom-left {
-    bottom: 0px;
-    left: 0px;
+    bottom: 0;
+    left: 0;
     cursor: nesw-resize;
 }
 
 .resizer.bottom-right {
-    bottom: 0px;
-    right: 0px;
+    bottom: 0;
+    right: 0;
     cursor: nwse-resize;
 }
 
-
- .border-resizer {
+.border-resizer {
     z-index: 10;
     position: absolute;
 }
@@ -148,7 +147,7 @@ body {
     top: 0;
     bottom: 0;
     background-color: transparent;
-} 
+}
 
 .border-resizer.top {
     top: 0px;
@@ -171,6 +170,6 @@ body {
 }
 
 /* Highlight active resizer */
- .border-resizer:hover {
+.border-resizer:hover {
     background-color: #F4C430;
 }
