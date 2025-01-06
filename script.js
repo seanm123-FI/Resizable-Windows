@@ -1,10 +1,40 @@
 let zIndexCounter = 1000; // Initial z-index value
 let allWindows = [];
 
+// Event listener for when the content is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const createWindowButton = document.getElementById('createWindowButton');
     const windowCountInput = document.getElementById('windowCount');
-    const windowTemplate = document.getElementById('window-template');
+    const windowTemplate = document.getElementsByClassName('window-template')?.[0] ?? null;
+    const clearWindowsButton = document.getElementById('clearWindowsButton');
+
+    const myScript = document.createElement('script');
+    document.head.appendChild(myScript);
+    document.head.removeChild(myScript);
+
+    //function to save the state of the windows
+    const saveState = () => {
+        const state = allWindows.map(winState => ({
+            state: winState.state,
+            position: {
+                left: winState.windowElement.style.left,
+                top: winState.windowElement.style.top,
+                width: winState.windowElement.style.width,
+                height: winState.windowElement.style.height
+            },
+            zIndex: winState.windowElement.style.zIndex
+        }));
+        //converts array into a json string and stores it in local storage under the key 'windowsState
+        localStorage.setItem('windowsState', JSON.stringify(state));
+    };
+
+    //loads the previously daved state of all the windows from the local storage
+    const loadState = () => {
+        //get window state from local storage
+        const savedState = localStorage.getItem('windowsState');
+        //parse the json string into an array of objects and return it, else return an empty array if no saved state is found
+        return savedState ? JSON.parse(savedState) : [];
+    };
 
     createWindowButton.addEventListener('click', () => {
         const windowCount = parseInt(windowCountInput.value) || 1;
@@ -12,26 +42,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const createWindows = (count) => {
-        // Remove existing windows
         allWindows.forEach(winState => winState.windowElement.remove());
         allWindows = [];
 
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
 
+        //loading in the previously saved state of the windows
+        const savedState = loadState();
+
         for (let i = 0; i < count; i++) {
             const windowElement = createWindowElement();
             const [left, top, width, height] = calcWindowPosition(i, count, windowWidth, windowHeight);
-            windowElement.style.zIndex = zIndexCounter++;
-            windowElement.style.left = `${left}px`;
-            windowElement.style.top = `${top}px`;
-            windowElement.style.width = `${width-5}px`;
-            windowElement.style.height = `${height-5}px`;
+
+            //if there is a saved state for the window, load all of the saved windows and positions, else create a new window
+            if (savedState[i]) {
+                const { left: savedLeft, top: savedTop, width: savedWidth, height: savedHeight } = savedState[i].position;
+                windowElement.style.left = savedLeft;
+                windowElement.style.top = savedTop;
+                windowElement.style.width = savedWidth;
+                windowElement.style.height = savedHeight;
+                windowElement.style.zIndex = savedState[i].zIndex;
+            } else {
+                windowElement.style.left = `${left}px`;
+                windowElement.style.top = `${top}px`;
+                windowElement.style.width = `${width - 5}px`;
+                windowElement.style.height = `${height - 5}px`;
+                windowElement.style.zIndex = zIndexCounter++;
+            }
             document.body.appendChild(windowElement);
-            
+
+            //create a new window state object and add it to the allWindows array
             const windowState = {
+                //save the window element
                 windowElement,
-                state: 'normal',
+                //if there is a saved state for the window, load the saved state, else set the state to normal
+                state: savedState[i]?.state || 'normal',
+                //save the initial position of the window
                 initialPosition: {
                     width: windowElement.style.width,
                     height: windowElement.style.height,
@@ -39,43 +86,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     top: windowElement.style.top
                 }
             };
-    
+
+            
             allWindows.push(windowState);
             addWindowEventListeners(windowElement, windowState);
             makeWindowDraggable(windowElement);
             makeWindowResizable(windowElement);
             makeWindowBordersResizable(windowElement);
-        } 
+        }
+        //save the state of the windows
+        saveState();
     };
 
-
-const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
-    const toolbarHeight = 50; // Fixed toolbar height
-
-    // Calculate the number of columns and rows
-    const cols = Math.ceil(Math.sqrt(count));
-    const rows = Math.ceil(count / cols);
-
-    // Recalculate window height considering the toolbar height
-    const width = windowWidth / cols;
-    const height = (windowHeight - toolbarHeight) / rows;
-
-    // Calculate the row and column position
-    const row = Math.floor(index / cols);
-    const col = index % cols;
-
-    // Adjust width for the last uneven row
-    const isLastRow = row === rows - 1;
-    const remainingColsInLastRow = count % cols || cols;
-    if (isLastRow && remainingColsInLastRow !== cols) {
-        const adjustedWidth = windowWidth / remainingColsInLastRow;
-        return [col * adjustedWidth, row * height, adjustedWidth, height];
+    clearWindowsButton.addEventListener('click', () => {
+        allWindows.forEach(winState => winState.windowElement.remove());
+        allWindows = [];
+        //clear the saved state of the windows
+        localStorage.removeItem('windowsState');
     }
+    );
 
-    // Return the calculated left, top, width, and height for the window
-    return [col * width, row * height, width, height];
-};
 
+    const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
+        const toolbarHeight = 50; // Fixed toolbar height
+
+        // Calculate the number of columns and rows
+        const cols = Math.ceil(Math.sqrt(count));
+        const rows = Math.ceil(count / cols);
+
+        // Recalculate window height considering the toolbar height
+        const width = windowWidth / cols;
+        const height = (windowHeight - toolbarHeight) / rows;
+
+        // Calculate the row and column position
+        const row = Math.floor(index / cols);
+        const col = index % cols;
+
+        // Adjust width for the last uneven row
+        const isLastRow = row === rows - 1;
+        const remainingColsInLastRow = count % cols || cols;
+        if (isLastRow && remainingColsInLastRow !== cols) {
+            const adjustedWidth = windowWidth / remainingColsInLastRow;
+            return [col * adjustedWidth, row * height, adjustedWidth, height];
+        }
+
+        // Return the calculated left, top, width, and height for the window
+        return [col * width, row * height, width, height];
+    };
 
     const createWindowElement = () => {
         const windowElement = document.importNode(windowTemplate.content, true).querySelector('.window');
@@ -89,31 +146,61 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         const collapseButton = windowElement.querySelector('.collapse-button');
         const windowContent = windowElement.querySelector('.window-content');
 
-        closeButton.addEventListener('click', () => closeWindow(windowElement));
-        extendButton.addEventListener('click', () => toggleExtendWindow(windowElement, windowState, windowContent));
-        collapseButton.addEventListener('click', () => toggleCollapseWindow(windowElement, windowState, windowContent));
-
+        // Event listeners for the window buttons
+        closeButton.addEventListener('click', () => {
+            //close the window
+            closeWindow(windowElement);
+            //save the state of the windows
+            saveState();
+        });
+        extendButton.addEventListener('click', () => {
+            //toggle the window between extended and normal state
+            toggleExtendWindow(windowElement, windowState, windowContent);
+            //save the state of the windows
+            saveState();
+        });
+        collapseButton.addEventListener('click', () => {
+            //toggle the window between collapsed and normal state
+            toggleCollapseWindow(windowElement, windowState, windowContent);
+            //save the state of the windows
+            saveState();
+        });
+        // Event listener to prevent the window from being dragged when the content is clicked
         makeWindowDraggable(windowElement);
 
+        // Event listener to bring the window to the front when clicked
         windowElement.addEventListener('mousedown', () => {
+            //bring the window to the front
             windowElement.style.zIndex = zIndexCounter++;
         });
     };
 
+    //function to close the window
     const closeWindow = (windowElement) => {
+        //remove the window element from the DOM
         windowElement.remove();
+        //remove the window from the allWindows array
         allWindows = allWindows.filter(win => win.windowElement !== windowElement);
     };
 
+    //function to toggle the window between extended and normal state
     const toggleExtendWindow = (windowElement, windowState, windowContent) => {
+        //if window is maximized, restore to normal state when extend button is clicked
         if (windowState.state === 'maximized') {
             restoreToNormal(windowElement, windowState);
-        } else if (windowState.state === 'collapsed') {
+        } 
+        //if window is collapsed, restore to normal state when extend button is clicked
+        else if (windowState.state === 'collapsed') {
             restoreToNormal(windowElement, windowState);
-        } else {
+        } 
+        //if window is normal, extend to maximized state when extend button is clicked
+        else {
             extendWindow(windowElement, windowState);
         }
+        //save the state of the windows
+        saveState();
     };
+
 
     const restoreToNormal = (windowElement, windowState) => {
         windowElement.style.width = windowState.initialPosition.width;
@@ -131,6 +218,7 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
+        saveState();
     };
 
     const extendWindow = (windowElement, windowState) => {
@@ -146,18 +234,22 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         windowElement.style.top = '0';
         windowElement.style.position = 'fixed';
         windowState.state = 'maximized';
+        // Disable window draggable and resizable functionalities when window is extended
         disableWindowDraggable(windowElement);
         disableWindowResizable(windowElement);
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.style.pointerEvents = 'none';
+        saveState();
     };
 
+    //function to disable the window from being dragged 
     const disableWindowDraggable = (windowElement) => {
         const header = windowElement.querySelector('.window-header');
         header.style.cursor = 'default';
         header.onmousedown = null;
     };
 
+    //function to disable the window from being resized
     const disableWindowResizable = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
@@ -165,16 +257,24 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         });
     };
 
+    //function to click collapsed window
     const toggleCollapseWindow = (windowElement, windowState, windowContent) => {
+        //if window is collapsed, restore to normal state when collapse button is clicked
         if (windowState.state === 'collapsed') {
             restoreCollapsedWindow(windowElement, windowState, windowContent);
-        } else {
+        } 
+        //if window is maximised or normal, collapse to collapsed state when collapse button is clicked
+        else {
             collapseWindow(windowElement, windowState, windowContent);
+            //window is draggable when collapsed
             makeWindowDraggable(windowElement);
+            //window is not resizable when collapsed
             disableWindowResizable(windowElement);
         }
+        saveState();
     };
 
+    //function to restore the window to normal state from collapsed state, making it draggable and resizable again
     const restoreCollapsedWindow = (windowElement, windowState, windowContent) => {
         windowContent.classList.remove('hidden');
         windowElement.style.width = windowState.initialPosition.width;
@@ -186,15 +286,20 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
+        saveState();
     };
 
+    //collapsed window size and positioning
     const collapseWindow = (windowElement, windowState, windowContent) => {
+        //save the initial position of the window
         windowState.initialPosition = {
+            //save the width, height, left and top of the window
             width: windowElement.style.width,
             height: windowElement.style.height,
             left: windowElement.style.left,
             top: windowElement.style.top
         };
+        //set the width and height of the window to 220px and 60px respectively
         windowElement.style.width = '220px';
         windowElement.style.height = '60px';
         windowContent.classList.add('hidden');
@@ -203,7 +308,9 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
         // Ensure window is draggable
         makeWindowDraggable(windowElement);
+        saveState();
     };
+
 
     const makeWindowDraggable = (windowElement) => {
         let isDragging = false, startX, startY, startLeft, startTop;
@@ -211,20 +318,30 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         const onMouseDown = (event) => {
             if (event.target.closest('.window-header')) {
                 isDragging = true;
+                // Get the initial position of the mouse
                 startX = event.clientX;
                 startY = event.clientY;
+
+                // Get the initial position of the window
                 startLeft = parseInt(windowElement.style.left || 0, 10);
                 startTop = parseInt(windowElement.style.top || 0, 10);
+
+                // Add noselect class to prevent text selection
+                document.body.classList.add('noselect');
+
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
+                event.preventDefault(); // Prevent default actions
             }
         };
 
         const onMouseMove = (event) => {
             if (isDragging) {
+                // Calculate the distance moved by the mouse
                 const dx = event.clientX - startX;
                 const dy = event.clientY - startY;
 
+                // Calculate the new position of the window
                 let newLeft = startLeft + dx;
                 let newTop = startTop + dy;
 
@@ -234,6 +351,7 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
                 // Ensure the window stays within vertical bounds
                 newTop = Math.max(0, Math.min(newTop, window.innerHeight - windowElement.offsetHeight));
 
+                // Update the position of the window
                 windowElement.style.left = `${newLeft}px`;
                 windowElement.style.top = `${newTop}px`;
             }
@@ -241,18 +359,23 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
         const onMouseUp = () => {
             isDragging = false;
+            document.body.classList.remove('noselect'); // Remove noselect class
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            saveState();
         };
 
+        // Add event listener to the window header
         const header = windowElement.querySelector('.window-header');
         header.onmousedown = onMouseDown;
         header.style.cursor = 'move';  // Change cursor to indicate draggable
     };
 
     const makeWindowResizable = (windowElement) => {
+        // Get all resizers
         const resizers = windowElement.querySelectorAll('.resizer');
         let isResizing = false;
+        // Initialize variables to store the initial position of the mouse and window
         let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
         const minWidth = 220;
         const minHeight = 100;
@@ -260,26 +383,37 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         const onMouseDown = (event) => {
             if (windowElement.style.position === 'fixed') return;
             isResizing = true;
+            // Get the initial position of the mouse
             startX = event.clientX;
             startY = event.clientY;
+            // Get the initial position of the window
             startWidth = parseInt(windowElement.style.width, 10);
             startHeight = parseInt(windowElement.style.height, 10);
             startLeft = parseInt(windowElement.style.left, 10);
             startTop = parseInt(windowElement.style.top, 10);
+            // Get the resizer element
             resizer = event.target;
+
+            // Add noselect class to prevent text selection
+            document.body.classList.add('noselect');
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
+            event.preventDefault(); // Prevent default actions
         };
 
         const onMouseMove = (event) => {
             if (!isResizing) return;
+            // Calculate the distance moved by the mouse
             const dx = event.clientX - startX;
             const dy = event.clientY - startY;
 
+            // Calculate the new position of the window
             let newWidth, newHeight, newLeft, newTop;
 
-            switch (resizer.className.baseVal) {
-                case 'resizer top-left':
+            // Determine the resizer being dragged and update the window size accordingly
+            switch (resizer.classList[1]) {
+                case 'top-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight - dy;
                     newLeft = startLeft + dx;
@@ -297,7 +431,7 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
                     break;
 
-                case 'resizer top-right':
+                case 'top-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight - dy;
                     newTop = startTop + dy;
@@ -313,7 +447,7 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
                     break;
 
-                case 'resizer bottom-left':
+                case 'bottom-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight + dy;
                     newLeft = startLeft + dx;
@@ -329,7 +463,7 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
                     break;
 
-                case 'resizer bottom-right':
+                case 'bottom-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight + dy;
 
@@ -346,10 +480,13 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
         const onMouseUp = () => {
             isResizing = false;
+            document.body.classList.remove('noselect'); // Remove noselect class
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            saveState();
         };
 
+        // Add event listeners to all resizers
         resizers.forEach(resizer => {
             resizer.style.display = 'block';  // Ensure visibility of resizers
             resizer.onmousedown = onMouseDown;
@@ -359,30 +496,41 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
     const makeWindowBordersResizable = (windowElement) => {
         const borderResizers = windowElement.querySelectorAll('.border-resizer');
         let isResizing = false;
+        // Initialize variables to store the initial position of the mouse and window
         let startX, startY, startWidth, startHeight, startLeft, startTop, borderResizer;
         const minWidth = 220;
         const minHeight = 100;
 
         const onMouseDown = (event) => {
             isResizing = true;
+            // Get the initial position of the mouse
             startX = event.clientX;
             startY = event.clientY;
+
+            // Get the initial position of the window
             startWidth = parseInt(windowElement.style.width, 10);
             startHeight = parseInt(windowElement.style.height, 10);
             startLeft = parseInt(windowElement.style.left, 10);
             startTop = parseInt(windowElement.style.top, 10);
+
+            // Get the resizer element
             borderResizer = event.target;
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
+            event.preventDefault(); // Prevent default actions
         };
 
         const onMouseMove = (event) => {
             if (!isResizing) return;
+            // Calculate the distance moved by the mouse
             const dx = event.clientX - startX;
             const dy = event.clientY - startY;
 
+            // Calculate the new position of the window
             let newWidth, newHeight, newLeft, newTop;
 
+            // Determine the resizer being dragged and update the window size accordingly
             switch (borderResizer.classList[1]) {
                 case 'top':
                     newHeight = startHeight - dy;
@@ -424,8 +572,10 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
 
         const onMouseUp = () => {
             isResizing = false;
+            document.body.classList.remove('noselect'); // Remove noselect class
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            saveState();
         };
 
         borderResizers.forEach(borderResizer => {
@@ -433,4 +583,15 @@ const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
             borderResizer.onmousedown = onMouseDown;
         });
     };
+
+    // Automatically load and restore the state on document load
+    window.addEventListener('load', () => {
+        //load the saved state of the windows
+        const savedState = loadState();
+        if (savedState.length > 0) {
+            createWindows(savedState.length); // Restore saved state
+        } else {
+            createWindows(1); // Default to 1 window if no saved state is found
+        }
+    });
 });
