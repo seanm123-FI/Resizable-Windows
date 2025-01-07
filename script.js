@@ -1,4 +1,4 @@
-let zIndexCounter = 1000; // Initial z-index value
+let zIndexCounter = 0; // Initial z-index value
 let allWindows = [];
 
 // Event listener for when the content is loaded
@@ -103,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
         allWindows = [];
         //clear the saved state of the windows
         localStorage.removeItem('windowsState');
+        zIndexes = [];
+        zIndexCounter
     }
     );
 
@@ -170,9 +172,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Event listener to bring the window to the front when clicked
         windowElement.addEventListener('mousedown', () => {
-            //bring the window to the front
-            windowElement.style.zIndex = zIndexCounter++;
+            updateZIndex(allWindows, windowElement);
+        
+            // Log the new z-index values for debugging
+            // Assign unique IDs to window elements if not already assigned
+        allWindows.forEach((winState, index) => {
+                console.log(`Window: ${index + 1 || ''} zIndex: ${winState.windowElement.style.zIndex}`);
+            });
         });
+
+
+        const updateZIndex = (allWindows, windowElement) => {
+            // Get the length of allWindows
+            const numWindows = allWindows.length;
+        
+            // Calculate and assign ordered zIndexes from 1 to numWindows to all windows apart from the clicked one
+            let zIndex = 1;
+            // Assign zIndex values to all windows apart from the clicked one
+            allWindows.forEach(winState => {
+                // Skip the clicked window
+                if (winState.windowElement !== windowElement) {
+                    // Assign zIndex values from 1 to numWindows
+                    winState.windowElement.style.zIndex = zIndex;
+                    zIndex++;
+                }
+            });
+        
+            // Assign the highest zIndex to the clicked window
+            windowElement.style.zIndex = numWindows;
+        };
+
     };
 
     //function to close the window
