@@ -401,45 +401,41 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const makeWindowResizable = (windowElement) => {
-        // Get all resizers
+        // Get all resizer elements
         const resizers = windowElement.querySelectorAll('.resizer');
         let isResizing = false;
-        // Initialize variables to store the initial position of the mouse and window
         let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
         const minWidth = 220;
         const minHeight = 100;
-
+    
         const onMouseDown = (event) => {
+            event.preventDefault(); // Prevent default actions
+            event.stopPropagation(); // Prevent other mousedown handlers from executing
+    
             if (windowElement.style.position === 'fixed') return;
             isResizing = true;
-            // Get the initial position of the mouse
             startX = event.clientX;
             startY = event.clientY;
-            // Get the initial position of the window
             startWidth = parseInt(windowElement.style.width, 10);
             startHeight = parseInt(windowElement.style.height, 10);
             startLeft = parseInt(windowElement.style.left, 10);
             startTop = parseInt(windowElement.style.top, 10);
-            // Get the resizer element
-            resizer = event.target;
-
+            //Get the closest resizer element to the click
+            resizer = event.target.closest('.resizer');
+            
             // Add noselect class to prevent text selection
             document.body.classList.add('noselect');
-
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
-            event.preventDefault(); // Prevent default actions
         };
-
+    
         const onMouseMove = (event) => {
             if (!isResizing) return;
-            // Calculate the distance moved by the mouse
             const dx = event.clientX - startX;
             const dy = event.clientY - startY;
-
-            // Calculate the new position of the window
+    
             let newWidth, newHeight, newLeft, newTop;
-
+    
             // Determine the resizer being dragged and update the window size accordingly
             switch (resizer.classList[1]) {
                 case 'top-left':
@@ -447,78 +443,73 @@ document.addEventListener('DOMContentLoaded', () => {
                     newHeight = startHeight - dy;
                     newLeft = startLeft + dx;
                     newTop = startTop + dy;
-
+    
                     if (newWidth > minWidth && newLeft >= 0) {
                         windowElement.style.width = `${newWidth}px`;
                         windowElement.style.left = `${newLeft}px`;
                     }
-
+    
                     if (newHeight > minHeight && newTop >= 0) {
                         windowElement.style.height = `${newHeight}px`;
                         windowElement.style.top = `${newTop}px`;
                     }
-
                     break;
-
+    
                 case 'top-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight - dy;
                     newTop = startTop + dy;
-
+    
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
-
+    
                     if (newHeight > minHeight && newTop >= 0) {
                         windowElement.style.height = `${newHeight}px`;
                         windowElement.style.top = `${newTop}px`;
                     }
-
                     break;
-
+    
                 case 'bottom-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight + dy;
                     newLeft = startLeft + dx;
-
+    
                     if (newWidth > minWidth && newLeft >= 0) {
                         windowElement.style.width = `${newWidth}px`;
                         windowElement.style.left = `${newLeft}px`;
                     }
-
+    
                     if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight) {
                         windowElement.style.height = `${newHeight}px`;
                     }
-
                     break;
-
+    
                 case 'bottom-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight + dy;
-
+    
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
                     if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight) {
                         windowElement.style.height = `${newHeight}px`;
                     }
-
                     break;
             }
         };
-
+    
         const onMouseUp = () => {
             isResizing = false;
-            document.body.classList.remove('noselect'); // Remove noselect class
+            document.body.classList.remove('noselect');
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
             saveState();
         };
-
-        // Add event listeners to all resizers
+    
+        // Bind event listeners to corner resizers
         resizers.forEach(resizer => {
-            resizer.style.display = 'block';  // Ensure visibility of resizers
-            resizer.onmousedown = onMouseDown;
+            resizer.addEventListener('mousedown', onMouseDown);
         });
     };
 
