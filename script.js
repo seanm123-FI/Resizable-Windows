@@ -36,6 +36,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return savedState ? JSON.parse(savedState) : [];
     };
 
+    // Initialize window z-index values correctly
+    const updateZIndex = (clickedWindow) => {
+        // Remove the clicked window from the array
+        const indexToRemove = allWindows.findIndex(winState => winState.windowElement === clickedWindow);
+        const removedWindow = allWindows.splice(indexToRemove, 1)[0];
+
+        // Bring the clicked window to the front by pushing it to the end
+        allWindows.push(removedWindow);
+
+        // Update zIndex values based on the updated order
+        allWindows.forEach((winState, index) => {
+            winState.windowElement.style.zIndex = index + 1;
+        });
+    };
+
     createWindowButton.addEventListener('click', () => {
         const windowCount = parseInt(windowCountInput.value) || 1;
         createWindows(windowCount);
@@ -170,39 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event listener to prevent the window from being dragged when the content is clicked
         makeWindowDraggable(windowElement);
 
-        // Event listener to bring the window to the front when clicked
-        windowElement.addEventListener('mousedown', () => {
-            updateZIndex(allWindows, windowElement);
-        
-            // Log the new z-index values for debugging
-            // Assign unique IDs to window elements if not already assigned
-        allWindows.forEach((winState, index) => {
-                console.log(`Window: ${index + 1 || ''} zIndex: ${winState.windowElement.style.zIndex}`);
-            });
-        });
-
-
-        const updateZIndex = (allWindows, windowElement) => {
-            // Get the length of allWindows
-            const numWindows = allWindows.length;
-        
-            // Calculate and assign ordered zIndexes from 1 to numWindows to all windows apart from the clicked one
-            let zIndex = 1;
-            // Assign zIndex values to all windows apart from the clicked one
-            allWindows.forEach(winState => {
-                // Skip the clicked window
-                if (winState.windowElement !== windowElement) {
-                    // Assign zIndex values from 1 to numWindows
-                    winState.windowElement.style.zIndex = zIndex;
-                    zIndex++;
-                }
-            });
-        
-            // Assign the highest zIndex to the clicked window
-            windowElement.style.zIndex = numWindows;
-        };
-
-    };
+            // Ensure zIndex update on mouse down in window area
+    windowElement.addEventListener('mousedown', () => updateZIndex(windowElement));
+};         
 
     //function to close the window
     const closeWindow = (windowElement) => {
@@ -213,22 +198,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     //function to toggle the window between extended and normal state
-    const toggleExtendWindow = (windowElement, windowState, windowContent) => {
-        //if window is maximized, restore to normal state when extend button is clicked
-        if (windowState.state === 'maximized') {
+    const toggleExtendWindow = (windowElement, windowState) => {
+        if (windowState.state === 'maximized' || windowState.state === 'collapsed') {
             restoreToNormal(windowElement, windowState);
-        } 
-        //if window is collapsed, restore to normal state when extend button is clicked
-        else if (windowState.state === 'collapsed') {
-            restoreToNormal(windowElement, windowState);
-        } 
-        //if window is normal, extend to maximized state when extend button is clicked
-        else {
+    
+            // Ensure visibility of resizers when the window returns to normal state
+            const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+            resizers.forEach(resizer => {
+                resizer.style.display = 'block';
+            });
+        } else {
             extendWindow(windowElement, windowState);
         }
-        //save the state of the windows
         saveState();
     };
+    
+    
 
 
     const restoreToNormal = (windowElement, windowState) => {
@@ -238,17 +223,26 @@ document.addEventListener('DOMContentLoaded', () => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
-
+    
         // Restore content usability and re-enable functionalities
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.classList.remove('hidden');
         windowContent.style.pointerEvents = 'auto';
-
+    
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
+    
+        // Ensure visibility of all resizers
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        resizers.forEach(resizer => {
+            resizer.style.display = 'block';
+        });
+    
         saveState();
     };
+    
+    
 
     const extendWindow = (windowElement, windowState) => {
         windowState.initialPosition = {
@@ -263,13 +257,23 @@ document.addEventListener('DOMContentLoaded', () => {
         windowElement.style.top = '0';
         windowElement.style.position = 'fixed';
         windowState.state = 'maximized';
-        // Disable window draggable and resizable functionalities when window is extended
+        
+        // Hide all resizers when window is in maximized state
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        resizers.forEach(resizer => {
+            resizer.style.display = 'none';
+        });
+    
+        // Disable draggable and resizable functionalities when window is extended
         disableWindowDraggable(windowElement);
         disableWindowResizable(windowElement);
+    
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.style.pointerEvents = 'none';
         saveState();
     };
+    
+    
 
     //function to disable the window from being dragged 
     const disableWindowDraggable = (windowElement) => {
@@ -287,18 +291,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     //function to click collapsed window
-    const toggleCollapseWindow = (windowElement, windowState, windowContent) => {
-        //if window is collapsed, restore to normal state when collapse button is clicked
+    const toggleCollapseWindow = (windowElement, windowState) => {
+        const windowContent = windowElement.querySelector('.window-content');
+        
         if (windowState.state === 'collapsed') {
             restoreCollapsedWindow(windowElement, windowState, windowContent);
-        } 
-        //if window is maximised or normal, collapse to collapsed state when collapse button is clicked
-        else {
+        } else {
+            // If maximized or normal, save the current position before collapsing
+            if (windowState.state !== 'collapsed') {
+                windowState.initialPosition = {
+                    width: windowElement.style.width,
+                    height: windowElement.style.height,
+                    left: windowElement.style.left,
+                    top: windowElement.style.top
+                };
+            }
             collapseWindow(windowElement, windowState, windowContent);
-            //window is draggable when collapsed
-            makeWindowDraggable(windowElement);
-            //window is not resizable when collapsed
-            disableWindowResizable(windowElement);
         }
         saveState();
     };
@@ -312,33 +320,39 @@ document.addEventListener('DOMContentLoaded', () => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
+    
         makeWindowDraggable(windowElement);
-        makeWindowResizable(windowElement);
-        makeWindowBordersResizable(windowElement);
+        makeWindowResizable(windowElement); // Re-enable resizers
+        makeWindowBordersResizable(windowElement); // Re-enable border resizers
+    
+        // Ensure visibility of resizers and border resizers when restoring collapsed window
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        resizers.forEach(resizer => {
+            resizer.style.display = 'block';
+        });
+    
         saveState();
     };
+        
+    
 
     //collapsed window size and positioning
-    const collapseWindow = (windowElement, windowState, windowContent) => {
-        //save the initial position of the window
-        windowState.initialPosition = {
-            //save the width, height, left and top of the window
-            width: windowElement.style.width,
-            height: windowElement.style.height,
-            left: windowElement.style.left,
-            top: windowElement.style.top
-        };
-        //set the width and height of the window to 220px and 60px respectively
-        windowElement.style.width = '220px';
-        windowElement.style.height = '60px';
-        windowContent.classList.add('hidden');
-        windowState.state = 'collapsed';
-        windowContent.style.pointerEvents = 'none';
+ const collapseWindow = (windowElement, windowState, windowContent) => {
+    // Collapse to the saved initial position before any state change
+    windowElement.style.width = '220px';
+    windowElement.style.height = '60px';
+    windowElement.style.left = windowState.initialPosition.left;
+    windowElement.style.top = windowState.initialPosition.top;
+    windowContent.classList.add('hidden');
+    windowState.state = 'collapsed';
+    windowContent.style.pointerEvents = 'none';
 
-        // Ensure window is draggable
-        makeWindowDraggable(windowElement);
-        saveState();
-    };
+    // Ensure window is draggable
+    makeWindowDraggable(windowElement);
+    disableWindowResizable(windowElement);
+
+    saveState();
+};
 
 
     const makeWindowDraggable = (windowElement) => {
@@ -422,13 +436,16 @@ document.addEventListener('DOMContentLoaded', () => {
             startTop = parseInt(windowElement.style.top, 10);
             //Get the closest resizer element to the click
             resizer = event.target.closest('.resizer');
+
+            // Bring the window to the front when resizing
+            updateZIndex( windowElement);
             
             // Add noselect class to prevent text selection
             document.body.classList.add('noselect');
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         };
-    
+
         const onMouseMove = (event) => {
             if (!isResizing) return;
             const dx = event.clientX - startX;
@@ -532,9 +549,10 @@ document.addEventListener('DOMContentLoaded', () => {
             startHeight = parseInt(windowElement.style.height, 10);
             startLeft = parseInt(windowElement.style.left, 10);
             startTop = parseInt(windowElement.style.top, 10);
-
             // Get the resizer element
             borderResizer = event.target;
+
+            updateZIndex(windowElement);
 
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
@@ -615,3 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+//read about javascript performance object, place the current memory usage in the console and other information about the performance of the script
+console.log(performance.memory);
