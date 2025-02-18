@@ -11,7 +11,7 @@ const windowToolbar = `
     const windowTemplateString = `
         <div class="window">
             <div class="window-header">
-                <span id="window-header-title">My Window</span>
+                <span id="window-header-title"></span>
                 <div class="window-controls">
                     <button class="button close-button">X</button>
                     <button class="button extend-button">[ ]</button>
@@ -19,7 +19,7 @@ const windowToolbar = `
                 </div>
             </div>
             <div class="window-content">
-                <p>This is a resizable window.</p>
+            <p></p>
             </div>
             <svg class="resizer top-left" width="20" height="20">
                 <path d="M20,0 L0,0 L0,20" stroke="#F4C430" stroke-width="10" fill="none"/>
@@ -71,14 +71,16 @@ const mainFunc = () => {
         return savedState ? JSON.parse(savedState) : [];
     };
 
-    const updateZIndex = (clickedWindow) => {
-        const indexToRemove = allWindows.findIndex(winState => winState.windowElement === clickedWindow);
-        const removedWindow = allWindows.splice(indexToRemove, 1)[0];
-        allWindows.push(removedWindow);
-        allWindows.forEach((winState, index) => {
-            winState.windowElement.style.zIndex = index + 1;
-        });
-    };
+const updateZIndex = (clickedWindow) => {
+    const indexToRemove = allWindows.findIndex(winState => winState.windowElement === clickedWindow);
+    const removedWindow = allWindows.splice(indexToRemove, 1)[0];
+    allWindows.push(removedWindow);
+    allWindows.forEach((winState, index) => {
+        winState.windowElement.style.zIndex = index + 1;
+    });
+};
+
+
 
     createWindowButton.addEventListener('click', () => {
         const windowCount = parseInt(windowCountInput.value) || 1;
@@ -229,7 +231,11 @@ const mainFunc = () => {
         } else {
             console.error('Header element is not found.');
         }
-        
+            // Add the following event listener to update zIndex when the window is clicked
+    windowElement.addEventListener('mousedown', () => {
+        updateZIndex(windowElement);
+    });
+
         function onMouseDown(event) {
             if (event.target.closest('.window-header')) {
                 // omitted for brevity
