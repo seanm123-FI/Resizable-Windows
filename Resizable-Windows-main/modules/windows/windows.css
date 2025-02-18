@@ -1,9 +1,31 @@
-
+/* General button styles */
 .button {
-    padding: 10px 20px;
     margin: 20px;
     font-size: 16px;
     cursor: pointer;
+    color: #612f0c; /* Brown */
+    text-decoration: none;
+    font-weight: 600;
+    font-family: 'Arial', sans-serif; /* Change to Arial as Univers for Fiserv is not always available */
+    border: none;
+    background-color: transparent;
+}
+
+.button::before {
+    margin-left: auto;
+}
+
+.button::after, .button::before {
+    content: '';
+    width: 0%;
+    height: 2px;
+    background: #6699CC; /* Fiserv Steel Blue */
+    display: block;
+    transition: 0.5s;
+}
+
+.button:hover::after, .button:hover::before {
+    width: 100%;
 }
 
 .toolbar {
@@ -31,27 +53,44 @@
     position: absolute;
     width: 400px;
     height: 300px;
-    border: 3px solid #FF6600; /* Border for the entire window */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box-shadow */
-    background-color: white;
-    margin-top: 50px; /* avoids toolbar */
+    margin-top: 50px; /* Avoid toolbar */
+    background: rgba(0, 0, 255, 0.3); /* Original background */
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Regular shadow */
+    border-radius: 10px;
+    overflow: hidden;
+    
+    /* Intricate Chiseled Wooden Frame */
+    border: 20px solid transparent;
+    border-image: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c) 30;
+
+    /* Adding shadow to give depth effect */
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5), 0 0 5px rgba(0, 0, 0, 0.4);
+
+    /* Existing gradient and glares */
+    background-image:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 50%), /* Semi-circular glare */
+        linear-gradient(30deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.2)), /* Whispy line glare */
+        radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 1%), /* Small glaring upper-left */
+        radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 1%), /* Additional layer for small glaring upper-left */
+        radial-gradient(circle at 85% 25%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 1%), /* Small glaring upper-right */
+        radial-gradient(circle at 85% 25%, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 1%); /* Additional layer for small glaring upper-right */
 }
 
 .window-header {
     display: flex;
     justify-content: space-between;
-    background-color: #FF6600;
-    color: white;
+    /* background-color: #612f0c; Brown with 70% opacity */
+    color: #000;
+    background: rgba(255, 255, 255, 0.3); /* Translucent white background just for the draggable header */
+    backdrop-filter: blur(10px); /* Blur effect for the draggable window header */
     align-items: center;
     padding: 5px;
     cursor: move;
     user-select: none;
     height: 35px;
-    border: 3px solid #FF6600; /* Add 3px borders */
-    position: absolute;
-    left: 5px; /* Adjust position */
-    right: 5px; /* Adjust position */
-    top: 5px; /* Adjust position */
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
 }
 
 .window-controls {
@@ -59,25 +98,13 @@
     margin-right: 10px;
 }
 
-.button {
-    margin: 0 2px;
-    padding: 2px 8px;
-    cursor: pointer;
-    border: none;
-    background: #FF6600;
-    color: white;
-    font-size: 14px;
-    border-radius: 3px;
-}
-
 .window-content {
-    padding: 10px;
-    border: 3px solid #FF6600; /* Add 3px borders */
-    position: absolute;
-    left: 5px; /* Adjust position */
-    right: 5px; /* Adjust position */
-    top: 36px; /* Adjust position to be below header */
-    bottom: 5px; /* Adjust position */
+    color: #000;
+    border-top: none; /* Remove top border to avoid overlap with header */
+    height: calc(100% - 50px); /* Adjust height to fit within window */
+    background: rgba(255, 255, 255, 0.3); /* Translucent white background */
+    backdrop-filter: blur(10px); /* Blur effect for the window content */
+    overflow: auto;
 }
 
 .hidden {
@@ -88,76 +115,84 @@
 .resizer {
     position: absolute;
     z-index: 100;
-    width: 20px;  /* Visual size */
-    height: 20px; /* Visual size */
-    
-    background-color: transparent;
+    width: 20px;
+    height: 20px;
 }
 
 .resizer.top-left {
-    top: 0;
-    left: 0;
+    top: -10px;
+    left: -10px;
     cursor: nwse-resize;
 }
 
 .resizer.top-right {
-    top: 0;
-    right: 0;
+    top: -10px;
+    right: -10px;
     cursor: nesw-resize;
 }
 
 .resizer.bottom-left {
-    bottom: 0;
-    left: 0;
+    bottom: -10px;
+    left: -10px;
     cursor: nesw-resize;
 }
 
 .resizer.bottom-right {
-    bottom: 0;
-    right: 0;
+    bottom: -10px;
+    right: -10px;
     cursor: nwse-resize;
 }
 
 .border-resizer {
-    z-index: 10;
     position: absolute;
+    background-color: transparent;
 }
 
 .border-resizer.horizontal {
-    height: 5px;
-    left: 0;
-    right: 0;
-    background-color: transparent;
+    height: 10px;
+    left: -10px;
+    right: -10px;
+    background-color: linear-gradient(45deg,#612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
 }
 
+
 .border-resizer.vertical {
-    width: 5px;
-    top: 0;
-    bottom: 0;
-    background-color: transparent;
+    width: 10px;
+    top: -10px;
+    bottom: -10px;
+    background-color: linear-gradient(45deg,#612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
 }
 
 .border-resizer.top {
-    top: 0px;
+    top: -10px;
     cursor: ns-resize;
+    padding: 2.5px;
 }
 
 .border-resizer.right {
-    right: 0px;
+    right: -10px;
     cursor: ew-resize;
+    padding: 2.5px;
 }
 
 .border-resizer.bottom {
-    bottom: 0px; 
+    bottom: -10px;
     cursor: ns-resize;
+    padding: 2.5px;
 }
 
 .border-resizer.left {
-    left: 0px;
+    left: -10px;
     cursor: ew-resize;
+    padding: 2.5px;
 }
 
 /* Highlight active resizer */
 .border-resizer:hover {
-    background-color: #F4C430;
+    background-color: #612f0c; /* Optional: to align with the hover effect */
+}
+
+/* Animation for window hover (optional) */
+.window:hover {
+    animation: window-hover 1s ease-in-out 1;
 }
