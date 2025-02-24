@@ -1,5 +1,6 @@
 let zIndexCounter = 0; // Initial z-index value
 let allWindows = [];
+const TOOLBAR_HEIGHT = 45;
 
 const windowToolbar = `
     <div class="toolbar">
@@ -15,24 +16,16 @@ const windowToolbar = `
                 <div class="window-controls">
                     <button class="button close-button">X</button>
                     <button class="button extend-button">[ ]</button>
-                    <button class="button collapse-button">-</button>
+                    <button class="button collapse-button">---</button>
                 </div>
             </div>
             <div class="window-content">
             <p></p>
             </div>
-            <svg class="resizer top-left" width="20" height="20">
-                <path d="M20,0 L0,0 L0,20" stroke="#F4C430" stroke-width="10" fill="none"/>
-            </svg>
-            <svg class="resizer top-right" width="20" height="20">
-                <path d="M0,0 L20,0 L20,20" stroke="#F4C430" stroke-width="10" fill="none"/>
-            </svg>
-            <svg class="resizer bottom-left" width="20" height="20">
-                <path d="M0,0 L0,20 L20,20" stroke="#F4C430" stroke-width="10" fill="none"/>
-            </svg>
-            <svg class="resizer bottom-right" width="20" height="20">
-                <path d="M0,20 L20,20 L20,0" stroke="#F4C430" stroke-width="10" fill="none"/>
-            </svg>
+            <div class="resizer top-left"></div>
+            <div class="resizer top-right"></div>
+            <div class="resizer bottom-left"></div>
+            <div class="resizer bottom-right"></div>
             <div class="border-resizer top horizontal"></div>
             <div class="border-resizer right vertical"></div>
             <div class="border-resizer bottom horizontal"></div>
@@ -159,11 +152,10 @@ const updateZIndex = (clickedWindow) => {
     });
 
     const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
-        const toolbarHeight = 50;
         const cols = Math.ceil(Math.sqrt(count));
         const rows = Math.ceil(count / cols);
         const width = windowWidth / cols;
-        const height = (windowHeight - toolbarHeight) / rows;
+        const height = (windowHeight - TOOLBAR_HEIGHT) / rows;
         const row = Math.floor(index / cols);
         const col = index % cols;
         const isLastRow = row === rows - 1;
@@ -251,16 +243,19 @@ const updateZIndex = (clickedWindow) => {
     const toggleExtendWindow = (windowElement, windowState, windowContent) => {
         if (windowState.state === 'maximized' || windowState.state === 'collapsed') {
             restoreToNormal(windowElement, windowState);
-
+    
             const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
             resizers.forEach(resizer => {
-                resizer.style.display = 'block';
+                resizer.style.pointerEvents = 'auto';
+                resizer.style.opacity = 1; // Ensure consistency
             });
         } else {
             extendWindow(windowElement, windowState);
         }
         saveState();
     };
+    
+    
 
     const restoreToNormal = (windowElement, windowState) => {
         windowElement.style.width = windowState.initialPosition.width;
@@ -269,22 +264,25 @@ const updateZIndex = (clickedWindow) => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
-
+    
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.classList.remove('hidden');
         windowContent.style.pointerEvents = 'auto';
-
+    
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
-
+    
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
-            resizer.style.display = 'block';
+            resizer.style.pointerEvents = 'auto';
+            resizer.style.opacity = 1; // Ensure consistency
         });
-
+    
         saveState();
     };
+    
+    
 
     const extendWindow = (windowElement, windowState) => {
         windowState.initialPosition = {
@@ -294,25 +292,27 @@ const updateZIndex = (clickedWindow) => {
             top: windowElement.style.top
         };
         windowElement.style.width = '100%';
-        windowElement.style.height = '100%';
+        windowElement.style.height = `calc(100% - ${TOOLBAR_HEIGHT}px)`;
         windowElement.style.left = '0';
         windowElement.style.top = '0';
         windowElement.style.position = 'fixed';
         windowState.state = 'maximized';
-
+    
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
-            resizer.style.display = 'none';
+            resizer.style.pointerEvents = 'none';
+            resizer.style.opacity = 1; // Ensure consistency
         });
-
+    
         disableWindowDraggable(windowElement);
         disableWindowResizable(windowElement);
-
+    
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.style.pointerEvents = 'none';
         saveState();
     };
-
+    
+    
     const disableWindowDraggable = (windowElement) => {
         const header = windowElement.querySelector('.window-header');
         if (header) {
@@ -324,9 +324,12 @@ const updateZIndex = (clickedWindow) => {
     const disableWindowResizable = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
-            resizer.style.display = 'none';
+            resizer.style.pointerEvents = 'none';
+            resizer.style.opacity = 1; // Ensure consistency
         });
     };
+    
+    
 
     const toggleCollapseWindow = (windowElement, windowState, windowContent) => {
         if (windowContent) {
@@ -357,33 +360,41 @@ const updateZIndex = (clickedWindow) => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
-
+    
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
-
+    
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
-            resizer.style.display = 'block';
+            resizer.style.pointerEvents = 'auto';
+            resizer.style.opacity = 1; // Ensure consistency
         });
-
+    
         saveState();
     };
+    
+    
 
     const collapseWindow = (windowElement, windowState, windowContent) => {
-        windowElement.style.width = '220px';
-        windowElement.style.height = '60px';
+        windowElement.style.width = '200px';
+        windowElement.style.height = '100px';
         windowElement.style.left = windowState.initialPosition.left;
         windowElement.style.top = windowState.initialPosition.top;
         windowContent.classList.add('hidden');
         windowState.state = 'collapsed';
         windowContent.style.pointerEvents = 'none';
-
+    
         makeWindowDraggable(windowElement);
-        disableWindowResizable(windowElement);
-
+    
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        resizers.forEach(resizer => {
+            resizer.style.pointerEvents = 'none';
+            resizer.style.opacity = 1; // Ensure consistency
+        });
         saveState();
     };
+    
 
     const makeWindowDraggable = (windowElement) => {
         let isDragging = false, startX, startY, startLeft, startTop;
@@ -414,7 +425,7 @@ const updateZIndex = (clickedWindow) => {
                 let newTop = startTop + dy;
 
                 newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - windowElement.offsetWidth));
-                newTop = Math.max(0, Math.min(newTop, window.innerHeight - windowElement.offsetHeight));
+                newTop = Math.max(0, Math.min(newTop, window.innerHeight - windowElement.offsetHeight - TOOLBAR_HEIGHT));
 
                 windowElement.style.left = `${newLeft}px`;
                 windowElement.style.top = `${newTop}px`;
@@ -516,7 +527,7 @@ const updateZIndex = (clickedWindow) => {
                         windowElement.style.left = `${newLeft}px`;
                     }
 
-                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight) {
+                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
                         windowElement.style.height = `${newHeight}px`;
                     }
                     break;
@@ -528,7 +539,7 @@ const updateZIndex = (clickedWindow) => {
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
-                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight) {
+                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
                         windowElement.style.height = `${newHeight}px`;
                     }
                     break;
@@ -594,7 +605,7 @@ const updateZIndex = (clickedWindow) => {
                 case 'bottom':
                     newHeight = startHeight + dy;
 
-                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight) {
+                    if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
                         windowElement.style.height = `${newHeight}px`;
                     }
                     break;
@@ -649,12 +660,3 @@ console.log(performance.memory);
     mainFunc();
 })();
 
-/*
-  Summary of Fixes and Solutions:
-
-  1. Removed nested <template> tags to ensure correct parsing of HTML elements.
-  2. Simplified the createWindowElement function to correctly extract and return the .window element from the parsed string.
-  3. Controlled initial content load by only appending the toolbar to the document body initially and ensuring windows are created based on user interaction or restored state.
-
-  These changes ensure correct element identification, avoid unintended content load, and restrict window creation to intended actions.
-*/
