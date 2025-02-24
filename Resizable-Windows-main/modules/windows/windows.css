@@ -116,6 +116,7 @@
     width: 20px;
     height: 20px;
     background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 40px 40px; /* Ensure gradient does not stretch */
 }
 
 .resizer.top-left {
@@ -147,43 +148,48 @@
 }
 
 .border-resizer.horizontal {
-    height: 15px;
-    left: 20px;
-    right: 20px;
+    height: 20px;
+    left: 0;
+    right: 0;
     background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
 
 .border-resizer.vertical {
-    width: 15px;
-    top: 20px;
-    bottom: 20px;
+    width: 20px;
+    top: 0;
+    bottom: 0;
     background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
 
 .border-resizer.top {
     top: 0px;
     cursor: ns-resize;
-    padding: 2.5px;
+    background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
 
 .border-resizer.right {
     right: 0px;
     cursor: ew-resize;
-    padding: 2.5px;
+    background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
 
 .border-resizer.bottom {
     bottom: 0px;
     cursor: ns-resize;
-    padding: 2.5px;
+    background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
 
 .border-resizer.left {
     left: 0px;
     cursor: ew-resize;
-    padding: 2.5px;
+    background: linear-gradient(45deg, #612f0c, #A0522D 25%, #612f0c 25%, #612f0c 50%, #A0522D 50%, #612f0c 75%, #8a4f25 75%, #612f0c);
+    background-size: 30px 30px;  /* Ensure gradient does not stretch */
 }
-
 
 /* Animation for window hover (optional) */
 .window:hover {
