@@ -3,33 +3,34 @@ let allWindows = [];
 const TOOLBAR_HEIGHT = 45;
 
 const windowToolbar = `
-    <div class="toolbar">
-        <input type="number" id="windowCount" placeholder="Number of windows" min="1">
-        <button id="createWindowButton">Create Windows</button>
-        <button id="clearWindowsButton">Clear Windows</button>
+    <div class="toolbar" role="toolbar" aria-label="Window Toolbar">
+        <input type="number" id="windowCount" placeholder="Input number of windows" min="1" aria-required="true">
+        <button id="createWindowButton" aria-label="Create Windows">Create Windows</button>
+        <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
     </div>`;
 
+
     const windowTemplateString = `
-        <div class="window">
-            <div class="window-header">
-                <span id="window-header-title"></span>
-                <div class="window-controls">
-                    <button class="button close-button">X</button>
-                    <button class="button extend-button">[ ]</button>
-                    <button class="button collapse-button">---</button>
+        <div class="window" aria-live="polite">
+            <div class="window-header" role="banner" aria-labelledby="window-header-title">
+                <span id="window-header-title" role="heading" aria-level="1"></span>
+                <div class="window-controls" role="group" aria-label="Window Controls">
+                    <button class="button close-button" aria-label="Close Window">X</button>
+                    <button class="button extend-button" aria-label="Maximise Window">[ ]</button>
+                    <button class="button collapse-button" aria-label="Minimise Window">---</button>
                 </div>
             </div>
-            <div class="window-content">
+            <div class="window-content" aria-label="Window Content" aria-live="polite">
             <p></p>
             </div>
-            <div class="resizer top-left"></div>
-            <div class="resizer top-right"></div>
-            <div class="resizer bottom-left"></div>
-            <div class="resizer bottom-right"></div>
-            <div class="border-resizer top horizontal"></div>
-            <div class="border-resizer right vertical"></div>
-            <div class="border-resizer bottom horizontal"></div>
-            <div class="border-resizer left vertical"></div>
+            <div class="resizer top-left" role="separator" aria-label="Top Left Corner Resizer"></div>
+            <div class="resizer top-right" role="separator" aria-label="Top Right Corner Resizer"></div>
+            <div class="resizer bottom-left" role="separator" aria-label="Bottom Left Corner Resizer"></div>
+            <div class="resizer bottom-right" role="separator" aria-label="Bottom Right Corner Resizer"></div>
+            <div class="border-resizer top horizontal" aria-label="Top Border Resizer"></div>
+            <div class="border-resizer right vertical" aria-label="Right Border Resizer"></div>
+            <div class="border-resizer bottom horizontal" aria-label="Bottom Border Resizer"></div>
+            <div class="border-resizer left vertical" aria-label="Left Border Resizer"></div>
         </div>
       `;
 
