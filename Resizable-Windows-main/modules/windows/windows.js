@@ -1,38 +1,45 @@
+// unit testing - function by function to see if the function works as expected, test for passes and fails
+// integration testing - test the whole application to see if it works as expected, test for passes and fails 
+// end to end testing - test the whole application to see if it works as expected, test for passes and fails
+
+//Cypress and jest are the two most popular testing frameworks for javascript
+//Cypress is used for end to end testing and jest is used for unit testing
+
 let zIndexCounter = 0; // Initial z-index value
 let allWindows = [];
 const TOOLBAR_HEIGHT = 45;
 
 const windowToolbar = `
-    <div class="toolbar" role="toolbar" aria-label="Window Toolbar">
-        <input type="number" id="windowCount" placeholder="Input number of windows" min="1" aria-required="true">
+    <div class="toolbar" role="toolbar" aria-label="Window management">     
+        <input type="number" id="windowCount" placeholder="Number of windows" aria-label="Number of windows">
         <button id="createWindowButton" aria-label="Create Windows">Create Windows</button>
         <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
     </div>`;
 
-
     const windowTemplateString = `
-        <div class="window" aria-live="polite">
-            <div class="window-header" role="banner" aria-labelledby="window-header-title">
-                <span id="window-header-title" role="heading" aria-level="1"></span>
-                <div class="window-controls" role="group" aria-label="Window Controls">
-                    <button class="button close-button" aria-label="Close Window">X</button>
-                    <button class="button extend-button" aria-label="Maximise Window">[ ]</button>
-                    <button class="button collapse-button" aria-label="Minimise Window">---</button>
-                </div>
+    <div class="window" aria-labelledby="window-header-title" aria-describedby="window-content-description">
+        <div class="window-header" tabindex="0">
+            <span id="window-header-title" aria-label="Window Title">Window Title</span>
+            <div class="window-controls"  aria-labelledby="window-controls-label">
+                <span id="window-controls-label" class="visually-hidden"></span>
+                <button class="button close-button" aria-label="Close Window">X</button>
+                <button class="button extend-button" aria-label="Maximize Window">[ ]</button>
+                <button class="button collapse-button" aria-label="Minimize Window">---</button>
             </div>
-            <div class="window-content" aria-label="Window Content" aria-live="polite">
-            <p></p>
-            </div>
-            <div class="resizer top-left" role="separator" aria-label="Top Left Corner Resizer"></div>
-            <div class="resizer top-right" role="separator" aria-label="Top Right Corner Resizer"></div>
-            <div class="resizer bottom-left" role="separator" aria-label="Bottom Left Corner Resizer"></div>
-            <div class="resizer bottom-right" role="separator" aria-label="Bottom Right Corner Resizer"></div>
-            <div class="border-resizer top horizontal" aria-label="Top Border Resizer"></div>
-            <div class="border-resizer right vertical" aria-label="Right Border Resizer"></div>
-            <div class="border-resizer bottom horizontal" aria-label="Bottom Border Resizer"></div>
-            <div class="border-resizer left vertical" aria-label="Left Border Resizer"></div>
         </div>
-      `;
+        <div class="window-content" id="window-content-description">
+            <p></p>
+        </div>
+        <div class="resizer top-left" role="separator" aria-label="Resize top-left corner" tabindex="0"></div>
+        <div class="resizer top-right" role="separator" aria-label="Resize top-right corner" tabindex="0"></div>
+        <div class="resizer bottom-left" role="separator" aria-label="Resize bottom-left corner" tabindex="0"></div>
+        <div class="resizer bottom-right" role="separator" aria-label="Resize bottom-right corner" tabindex="0"></div>
+        <div class="border-resizer top horizontal" role="separator" aria-label="Resize top border" tabindex="0"></div>
+        <div class="border-resizer right vertical" role="separator" aria-label="Resize right border" tabindex="0"></div>
+        <div class="border-resizer bottom horizontal" role="separator" aria-label="Resize bottom border" tabindex="0"></div>
+        <div class="border-resizer left vertical" role="separator" aria-label="Resize left border" tabindex="0"></div>
+    </div>
+  `;
 
 
 
@@ -140,6 +147,7 @@ const updateZIndex = (clickedWindow) => {
             makeWindowDraggable(windowElement);
             makeWindowResizable(windowElement);
             makeWindowBordersResizable(windowElement);
+            addKeyboardAccessibilityToResizers(windowElement);
         }
         saveState();
     };
@@ -449,6 +457,89 @@ const updateZIndex = (clickedWindow) => {
             console.error('Header element is not found.');
         }
     };
+
+    const addKeyboardAccessibilityToResizers = (windowElement) => {
+        const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
+        const minWidth  = 220;  
+        const minHeight = 100;
+        const step = 10;
+        resizers.forEach(resizer => {
+            resizer.addEventListener('keydown', (event) => {
+            let newWidth, newHeight, newLeft, newTop;
+            const startWidth = parseInt(windowElement.style.width, 10);
+            const startHeight = parseInt(windowElement.style.height, 10);
+            const startLeft = parseInt(windowElement.style.left, 10);
+            const startTop = parseInt(windowElement.style.top, 10);
+
+            switch (event.key) {
+                case 'ArrowUp':
+                    if (resizer.classList.contains('top') || resizer.classList.contains('top-left') || resizer.classList.contains('top-right')) {
+                        newHeight = startHeight + step;
+                        newTop = startTop - step;
+                        if (newHeight > minHeight && newTop >= 0) {
+                            windowElement.style.height = `${newHeight}px`;
+                            windowElement.style.top = `${newTop}px`;
+                        }
+                    } else if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-left') || resizer.classList.contains('bottom-right')) {
+                        newHeight = startHeight - step;
+                        if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
+                            windowElement.style.height = `${newHeight}px`;
+                        }
+                    }
+                    break;
+                    case 'ArrowDown':
+                        if (resizer.classList.contains('top') || resizer.classList.contains('top-left') || resizer.classList.contains('top-right')) {
+                            newHeight = startHeight - step;
+                            newTop = startTop + step;
+                            if (newHeight > minHeight && newTop >= 0) {
+                                windowElement.style.height = `${newHeight}px`;
+                                windowElement.style.top = `${newTop}px`;
+                            }
+                        } else if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-left') || resizer.classList.contains('bottom-right')) {
+                            newHeight = startHeight + step;
+                            if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
+                                windowElement.style.height = `${newHeight}px`;
+                            }
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (resizer.classList.contains('left') || resizer.classList.contains('top-left') || resizer.classList.contains('bottom-left')) {
+                            newWidth = startWidth - step;
+                            newLeft = startLeft + step;
+                            if (newWidth > minWidth && newLeft >= 0) {
+                                windowElement.style.width = `${newWidth}px`;
+                                windowElement.style.left = `${newLeft}px`;
+                            }
+                        } else if (resizer.classList.contains('right') || resizer.classList.contains('top-right') || resizer.classList.contains('bottom-right')) {
+                            newWidth = startWidth + step;
+                            if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
+                                windowElement.style.width = `${newWidth}px`;
+                            }
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (resizer.classList.contains('left') || resizer.classList.contains('top-left') || resizer.classList.contains('bottom-left')) {
+                            newWidth = startWidth + step;
+                            newLeft = startLeft - step;
+                            if (newWidth > minWidth && newLeft >= 0) {
+                                windowElement.style.width = `${newWidth}px`;
+                                windowElement.style.left = `${newLeft}px`;
+                            }
+                        } else if (resizer.classList.contains('right') || resizer.classList.contains('top-right') || resizer.classList.contains('bottom-right')) {
+                            newWidth = startWidth - step;
+                            if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
+                                windowElement.style.width = `${newWidth}px`;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                saveState(); // Ensure this function exists and updates the state
+            });
+        });
+    };
+
 
     const makeWindowResizable = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer');
