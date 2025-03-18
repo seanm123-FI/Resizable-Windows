@@ -1,54 +1,116 @@
-// unit testing - function by function to see if the function works as expected, test for passes and fails
-// integration testing - test the whole application to see if it works as expected, test for passes and fails 
-// end to end testing - test the whole application to see if it works as expected, test for passes and fails
-
-//Cypress and jest are the two most popular testing frameworks for javascript
-//Cypress is used for end to end testing and jest is used for unit testing
-
 let zIndexCounter = 0; // Initial z-index value
 let allWindows = [];
 const TOOLBAR_HEIGHT = 45;
 
 const windowToolbar = `
-    <div class="toolbar" role="toolbar" aria-label="Window management">     
+    <div class="toolbar">
         <input type="number" id="windowCount" placeholder="Number of windows" aria-label="Number of windows">
         <button id="createWindowButton" aria-label="Create Windows">Create Windows</button>
         <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
+    </div>
+    <div class="status-announcement visually-hidden" aria-live="assertive">
+        <span id="activeWindowStatus"></span>
+    </div>
+    <div class="global-status-bar" aria-live="polite">
+        <span id="globalStatusBar" role="status"></span>
     </div>`;
 
     const windowTemplateString = `
     <div class="window" aria-labelledby="window-header-title" aria-describedby="window-content-description">
         <div class="window-header" tabindex="0">
-            <span id="window-header-title" aria-label="Window Title">Window Title</span>
-            <div class="window-controls"  aria-labelledby="window-controls-label">
+            <span id="window-header-title"></span>
+            <div class="window-controls">
                 <span id="window-controls-label" class="visually-hidden"></span>
-                <button class="button close-button" aria-label="Close Window">X</button>
-                <button class="button extend-button" aria-label="Maximize Window">[ ]</button>
-                <button class="button collapse-button" aria-label="Minimize Window">---</button>
+                <button class="button close-button"  tabindex="0">X</button>
+                <button class="button extend-button" tabindex="0">[ ]</button>
+                <button class="button collapse-button" tabindex="0">---</button>
+                <button class="button pop-out-button" tabindex="0">Pop Out</button>
+                <button class="button pop-in-button" tabindex="0">Pop In</button>
             </div>
         </div>
         <div class="window-content" id="window-content-description">
             <p></p>
+            <div class="status-bar" aria-live="polite">
+                <span id="myStatusBar" role="status"></span>
+            </div>
         </div>
-        <div class="resizer top-left" role="separator" aria-label="Resize top-left corner" tabindex="0"></div>
-        <div class="resizer top-right" role="separator" aria-label="Resize top-right corner" tabindex="0"></div>
-        <div class="resizer bottom-left" role="separator" aria-label="Resize bottom-left corner" tabindex="0"></div>
-        <div class="resizer bottom-right" role="separator" aria-label="Resize bottom-right corner" tabindex="0"></div>
-        <div class="border-resizer top horizontal" role="separator" aria-label="Resize top border" tabindex="0"></div>
-        <div class="border-resizer right vertical" role="separator" aria-label="Resize right border" tabindex="0"></div>
-        <div class="border-resizer bottom horizontal" role="separator" aria-label="Resize bottom border" tabindex="0"></div>
-        <div class="border-resizer left vertical" role="separator" aria-label="Resize left border" tabindex="0"></div>
+        <div class="resizer top-left" role="separator" tabindex="0"></div>
+        <div class="resizer top-right" role="separator" tabindex="0"></div>
+        <div class="resizer bottom-left" role="separator" tabindex="0"></div>
+        <div class="resizer bottom-right" role="separator" tabindex="0"></div>
+        <div class="border-resizer top horizontal" role="separator" tabindex="0"></div>
+        <div class="border-resizer right vertical" role="separator" tabindex="0"></div>
+        <div class="border-resizer bottom horizontal" role="separator" tabindex="0"></div>
+        <div class="border-resizer left vertical" role="separator" tabindex="0"></div>
     </div>
-  `;
+`;
+
+function announceActiveWindow(windowElement) {
+    const globalStatusBar = document.getElementById('globalStatusBar');
+    if (globalStatusBar) {
+        globalStatusBar.classList.add('visually-hidden'); // Ensure it's visible
+        globalStatusBar.innerText = `Active window: ${windowElement.innerText}`;
+    }
+}
+function updateStatus(windowElement, newStatus = '', isGlobal = false) {
+    if (isGlobal) {
+        const globalStatusBar = document.getElementById('globalStatusBar');
+        if (globalStatusBar) {
+            globalStatusBar.classList.add('visually-hidden'); // Ensure it's visible
+            globalStatusBar.innerText = newStatus;
+        }
+    } else {
+        const statusBar = windowElement.querySelector('#myStatusBar');
+        if (statusBar) {
+            statusBar.classList.add('visually-hidden'); // Ensure it's visible
+            statusBar.innerText = newStatus;
+        }
+    }
+}
+
+
+function addFocusEventListeners(windowElement) {
+    const focusableElements = windowElement.querySelectorAll('[tabindex], .window-header, .window-content, .resizer, .border-resizer, .button');
+
+    focusableElements.forEach(element => {
+        element.addEventListener('focus', (event) => {
+            let newStatus = '';
+
+            if (element.classList.contains('window-header')) {
+                newStatus = 'Window Header';
+            } else if (element.tagName === 'BUTTON') {
+                const ariaLabel = element.getAttribute('class');
+                newStatus = ariaLabel ? ariaLabel : 'Button';
+            } else if (element.classList.contains('resizer')) {
+                const ariaLabel = element.getAttribute('class');
+                newStatus = ariaLabel ? ariaLabel : 'Resizer';
+            } else if (element.classList.contains('border-resizer')) {
+                const ariaLabel = element.getAttribute('class');
+                newStatus = ariaLabel ? ariaLabel : 'Border Resizer';
+            } else if (element.classList.contains('window-content')) {
+                newStatus = 'Window Content';
+            } else {
+                newStatus = 'Outer Window';
+            }
+
+            // Update local status bar
+            updateStatus(windowElement, newStatus);
+
+            // Announce the active window in the global status bar
+            const windowTitle = windowElement.querySelector('#window-header-title').innerText;
+            announceActiveWindow(windowElement);
+        });
+    });
+}
 
 
 
 const mainFunc = () => {
-    document.body.innerHTML = windowToolbar ;
+    document.body.innerHTML = windowToolbar;
     const createWindowButton = document.getElementById('createWindowButton');
     const windowCountInput = document.getElementById('windowCount');
     const clearWindowsButton = document.getElementById('clearWindowsButton');
-    
+
     const myScript = document.createElement('script');
     document.head.appendChild(myScript);
     document.head.removeChild(myScript);
@@ -72,41 +134,40 @@ const mainFunc = () => {
         return savedState ? JSON.parse(savedState) : [];
     };
 
-const updateZIndex = (clickedWindow) => {
-    const indexToRemove = allWindows.findIndex(winState => winState.windowElement === clickedWindow);
-    const removedWindow = allWindows.splice(indexToRemove, 1)[0];
-    allWindows.push(removedWindow);
-    allWindows.forEach((winState, index) => {
-        winState.windowElement.style.zIndex = index + 1;
-    });
-};
-
-
+    const updateZIndex = (clickedWindow) => {
+        const indexToRemove = allWindows.findIndex(winState => winState.windowElement === clickedWindow);
+        const removedWindow = allWindows.splice(indexToRemove, 1)[0];
+        allWindows.push(removedWindow);
+        allWindows.forEach((winState, index) => {
+            winState.windowElement.style.zIndex = index + 1;
+        });
+    };
 
     createWindowButton.addEventListener('click', () => {
         const windowCount = parseInt(windowCountInput.value) || 1;
         createWindows(windowCount);
+        updateStatus(null, `Created ${windowCount} windows`, true);
     });
 
     const createWindows = (count) => {
         allWindows.forEach(winState => winState.windowElement.remove());
         allWindows = [];
-    
+
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const savedState = loadState();
-    
+
         for (let i = 0; i < count; i++) {
             const windowElement = createWindowElement();
-            console.log('windowElement:', windowElement); // Debugging log
-    
+            console.log('windowElement:', windowElement);
+
             if (!windowElement) {
                 console.error('Failed to create windowElement.');
                 continue; // Skip to the next iteration
             }
-    
+
             const [left, top, width, height] = calcWindowPosition(i, count, windowWidth, windowHeight);
-    
+
             if (savedState[i]) {
                 const { left: savedLeft, top: savedTop, width: savedWidth, height: savedHeight } = savedState[i].position;
                 if (savedLeft && savedTop && savedWidth && savedHeight) {
@@ -117,20 +178,20 @@ const updateZIndex = (clickedWindow) => {
                 } else {
                     windowElement.style.left = `${left}px`;
                     windowElement.style.top = `${top}px`;
-                    windowElement.style.width = `${width }px`;
-                    windowElement.style.height = `${height }px`;
+                    windowElement.style.width = `${width}px`;
+                    windowElement.style.height = `${height}px`;
                 }
                 windowElement.style.zIndex = savedState[i].zIndex;
             } else {
                 windowElement.style.left = `${left}px`;
                 windowElement.style.top = `${top}px`;
-                windowElement.style.width = `${width }px`;
+                windowElement.style.width = `${width}px`;
                 windowElement.style.height = `${height}px`;
                 windowElement.style.zIndex = zIndexCounter++;
             }
-    
+
             document.body.appendChild(windowElement);
-    
+
             const windowState = {
                 windowElement,
                 state: savedState[i]?.state || 'normal',
@@ -141,23 +202,31 @@ const updateZIndex = (clickedWindow) => {
                     top: windowElement.style.top
                 }
             };
-    
+
             allWindows.push(windowState);
             addWindowEventListeners(windowElement, windowState);
             makeWindowDraggable(windowElement);
             makeWindowResizable(windowElement);
             makeWindowBordersResizable(windowElement);
             addKeyboardAccessibilityToResizers(windowElement);
+
+            // Add focus event listeners
+            addFocusEventListeners(windowElement);
+
+            windowElement.addEventListener('focus', () => {
+                updateZIndex(windowElement);
+                const windowTitle = windowElement.querySelector('#window-header-title').innerText;
+                announceActiveWindow(windowElement);
+            }, true);
         }
         saveState();
     };
-    
-
     clearWindowsButton.addEventListener('click', () => {
         allWindows.forEach(winState => winState.windowElement.remove());
         allWindows = [];
         localStorage.removeItem('windowsState');
         zIndexCounter = 0;
+        updateStatus(null, 'Cleared all windows', true);
     });
 
     const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
@@ -183,21 +252,19 @@ const updateZIndex = (clickedWindow) => {
         console.log('windowElement:', windowElement); // Debugging log to inspect the windowElement
         return windowElement;
     };
-    
-    
 
     const addWindowEventListeners = (windowElement, windowState) => {
         console.log('windowElement:', windowElement); // Debugging log
-    
+
         const closeButton = windowElement.querySelector('.close-button');
         const extendButton = windowElement.querySelector('.extend-button');
         const collapseButton = windowElement.querySelector('.collapse-button');
         const windowContent = windowElement.querySelector('.window-content');
-    
+
         console.log('closeButton:', closeButton);
         console.log('extendButton:', extendButton);
         console.log('collapseButton:', collapseButton);
-    
+
         if (closeButton) {
             closeButton.addEventListener('click', () => {
                 closeWindow(windowElement);
@@ -206,7 +273,7 @@ const updateZIndex = (clickedWindow) => {
         } else {
             console.error('closeButton is null');
         }
-    
+
         if (extendButton) {
             extendButton.addEventListener('click', () => {
                 toggleExtendWindow(windowElement, windowState, windowContent);
@@ -215,7 +282,7 @@ const updateZIndex = (clickedWindow) => {
         } else {
             console.error('extendButton is null');
         }
-    
+
         if (collapseButton) {
             collapseButton.addEventListener('click', () => {
                 toggleCollapseWindow(windowElement, windowState, windowContent);
@@ -224,7 +291,7 @@ const updateZIndex = (clickedWindow) => {
         } else {
             console.error('collapseButton is null');
         }
-    
+
         const header = windowElement.querySelector('.window-header');
         if (header) {
             header.onmousedown = onMouseDown;
@@ -232,10 +299,10 @@ const updateZIndex = (clickedWindow) => {
         } else {
             console.error('Header element is not found.');
         }
-            // Add the following event listener to update zIndex when the window is clicked
-    windowElement.addEventListener('mousedown', () => {
-        updateZIndex(windowElement);
-    });
+        // Add the following event listener to update zIndex when the window is clicked
+        windowElement.addEventListener('mousedown', () => {
+            updateZIndex(windowElement);
+        });
 
         function onMouseDown(event) {
             if (event.target.closest('.window-header')) {
@@ -252,7 +319,7 @@ const updateZIndex = (clickedWindow) => {
     const toggleExtendWindow = (windowElement, windowState, windowContent) => {
         if (windowState.state === 'maximized' || windowState.state === 'collapsed') {
             restoreToNormal(windowElement, windowState);
-    
+
             const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
             resizers.forEach(resizer => {
                 resizer.style.pointerEvents = 'auto';
@@ -263,8 +330,6 @@ const updateZIndex = (clickedWindow) => {
         }
         saveState();
     };
-    
-    
 
     const restoreToNormal = (windowElement, windowState) => {
         windowElement.style.width = windowState.initialPosition.width;
@@ -273,25 +338,23 @@ const updateZIndex = (clickedWindow) => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
-    
+
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.classList.remove('hidden');
         windowContent.style.pointerEvents = 'auto';
-    
+
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
-    
+
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'auto';
             resizer.style.opacity = 1; // Ensure consistency
         });
-    
+
         saveState();
     };
-    
-    
 
     const extendWindow = (windowElement, windowState) => {
         windowState.initialPosition = {
@@ -306,22 +369,21 @@ const updateZIndex = (clickedWindow) => {
         windowElement.style.top = '0';
         windowElement.style.position = 'fixed';
         windowState.state = 'maximized';
-    
+
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'none';
             resizer.style.opacity = 1; // Ensure consistency
         });
-    
+
         disableWindowDraggable(windowElement);
         disableWindowResizable(windowElement);
-    
+
         const windowContent = windowElement.querySelector('.window-content');
         windowContent.style.pointerEvents = 'none';
         saveState();
     };
-    
-    
+
     const disableWindowDraggable = (windowElement) => {
         const header = windowElement.querySelector('.window-header');
         if (header) {
@@ -337,8 +399,6 @@ const updateZIndex = (clickedWindow) => {
             resizer.style.opacity = 1; // Ensure consistency
         });
     };
-    
-    
 
     const toggleCollapseWindow = (windowElement, windowState, windowContent) => {
         if (windowContent) {
@@ -369,33 +429,31 @@ const updateZIndex = (clickedWindow) => {
         windowElement.style.top = windowState.initialPosition.top;
         windowElement.style.position = 'absolute';
         windowState.state = 'normal';
-    
+
         makeWindowDraggable(windowElement);
         makeWindowResizable(windowElement);
         makeWindowBordersResizable(windowElement);
-    
+
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'auto';
             resizer.style.opacity = 1; // Ensure consistency
         });
-    
+
         saveState();
     };
-    
-    
 
     const collapseWindow = (windowElement, windowState, windowContent) => {
-        windowElement.style.width = '200px';
-        windowElement.style.height = '100px';
+        windowElement.style.width = '380px';
+        windowElement.style.height = '150px';
         windowElement.style.left = windowState.initialPosition.left;
         windowElement.style.top = windowState.initialPosition.top;
         windowContent.classList.add('hidden');
         windowState.state = 'collapsed';
         windowContent.style.pointerEvents = 'none';
-    
+
         makeWindowDraggable(windowElement);
-    
+
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'none';
@@ -403,7 +461,6 @@ const updateZIndex = (clickedWindow) => {
         });
         saveState();
     };
-    
 
     const makeWindowDraggable = (windowElement) => {
         let isDragging = false, startX, startY, startLeft, startTop;
@@ -460,33 +517,33 @@ const updateZIndex = (clickedWindow) => {
 
     const addKeyboardAccessibilityToResizers = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
-        const minWidth  = 220;  
+        const minWidth = 220;
         const minHeight = 100;
         const step = 10;
         resizers.forEach(resizer => {
             resizer.addEventListener('keydown', (event) => {
-            let newWidth, newHeight, newLeft, newTop;
-            const startWidth = parseInt(windowElement.style.width, 10);
-            const startHeight = parseInt(windowElement.style.height, 10);
-            const startLeft = parseInt(windowElement.style.left, 10);
-            const startTop = parseInt(windowElement.style.top, 10);
+                let newWidth, newHeight, newLeft, newTop;
+                const startWidth = parseInt(windowElement.style.width, 10);
+                const startHeight = parseInt(windowElement.style.height, 10);
+                const startLeft = parseInt(windowElement.style.left, 10);
+                const startTop = parseInt(windowElement.style.top, 10);
 
-            switch (event.key) {
-                case 'ArrowUp':
-                    if (resizer.classList.contains('top') || resizer.classList.contains('top-left') || resizer.classList.contains('top-right')) {
-                        newHeight = startHeight + step;
-                        newTop = startTop - step;
-                        if (newHeight > minHeight && newTop >= 0) {
-                            windowElement.style.height = `${newHeight}px`;
-                            windowElement.style.top = `${newTop}px`;
+                switch (event.key) {
+                    case 'ArrowUp':
+                        if (resizer.classList.contains('top') || resizer.classList.contains('top-left') || resizer.classList.contains('top-right')) {
+                            newHeight = startHeight + step;
+                            newTop = startTop - step;
+                            if (newHeight > minHeight && newTop >= 0) {
+                                windowElement.style.height = `${newHeight}px`;
+                                windowElement.style.top = `${newTop}px`;
+                            }
+                        } else if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-left') || resizer.classList.contains('bottom-right')) {
+                            newHeight = startHeight - step;
+                            if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
+                                windowElement.style.height = `${newHeight}px`;
+                            }
                         }
-                    } else if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-left') || resizer.classList.contains('bottom-right')) {
-                        newHeight = startHeight - step;
-                        if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
-                            windowElement.style.height = `${newHeight}px`;
-                        }
-                    }
-                    break;
+                        break;
                     case 'ArrowDown':
                         if (resizer.classList.contains('top') || resizer.classList.contains('top-left') || resizer.classList.contains('top-right')) {
                             newHeight = startHeight - step;
@@ -535,18 +592,17 @@ const updateZIndex = (clickedWindow) => {
                     default:
                         break;
                 }
-                saveState(); // Ensure this function exists and updates the state
+                saveState();
             });
         });
     };
-
 
     const makeWindowResizable = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer');
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
-        const minWidth = 220;
-        const minHeight = 100;
+        const minWidth = 380;
+        const minHeight = 150;
 
         const onMouseDown = (event) => {
             event.preventDefault();
@@ -576,7 +632,7 @@ const updateZIndex = (clickedWindow) => {
             let newWidth, newHeight, newLeft, newTop;
 
             // Determine the resizer being dragged and update the window size accordingly
-    switch (resizer.classList[1]) {
+            switch (resizer.classList[1]) {
                 case 'top-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight - dy;
@@ -655,8 +711,8 @@ const updateZIndex = (clickedWindow) => {
         const borderResizers = windowElement.querySelectorAll('.border-resizer');
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop, borderResizer;
-        const minWidth = 220;
-        const minHeight = 100;
+        const minWidth = 380;
+        const minHeight = 150;
 
         const onMouseDown = (event) => {
             isResizing = true;
@@ -724,14 +780,14 @@ const updateZIndex = (clickedWindow) => {
 
         const onMouseUp = () => {
             isResizing = false;
-            document.body.classList.remove('noselect'); 
+            document.body.classList.remove('noselect');
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
             saveState();
         };
 
         borderResizers.forEach(borderResizer => {
-            borderResizer.style.display = 'block'; 
+            borderResizer.style.display = 'block';
             borderResizer.addEventListener('mousedown', onMouseDown);
         });
     };
@@ -739,16 +795,13 @@ const updateZIndex = (clickedWindow) => {
     window.addEventListener('load', () => {
         const savedState = loadState();
         if (savedState.length > 0) {
-            createWindows(savedState.length); 
+            createWindows(savedState.length);
         } else {
-            createWindows(1); 
+            createWindows(1);
         }
     });
 };
 
-console.log(performance.memory);
-
 (() => {
     mainFunc();
 })();
-
