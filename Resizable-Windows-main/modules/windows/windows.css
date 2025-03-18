@@ -195,3 +195,25 @@
 .window:hover {
     animation: window-hover 1s ease-in-out 1;
 }
+
+/* // visually hidden from the user, but still available for screen readers */
+.visually-hidden {
+  position: absolute;
+  white-space: nowrap; /* Prevent wrapping */
+ 
+  width: 1px; /* Set it to the smallest possible size */
+  height: 1px;  /* (some screen readers ignore elements with zero height and width) */
+ 
+  overflow: hidden; /* Hide overflowing content after resizing */
+  border: 0; /* Reset any property that may change the elements size */
+  padding: 0;
+ 
+  /* Clipping defines what part of an element should be displayed. */
+  clip: rect(0 0 0 0); /* Deprecated clip property for older browsers */
+  clip-path: inset(
+    50%
+  ); /* clip-path for newer browsers. inset(50%) defines an inset rectangle that makes the content disappear.  */
+ 
+  margin: -1px; /* It seems like at the moment nobody is quite sure why margin: -1px is there. On top of that it seems to cause
+    some issues in some cases. */
+}
