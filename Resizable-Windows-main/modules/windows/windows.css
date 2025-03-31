@@ -217,3 +217,17 @@
   margin: -1px; /* It seems like at the moment nobody is quite sure why margin: -1px is there. On top of that it seems to cause
     some issues in some cases. */
 }
+
+body, div, iframe {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+}
+
+.window-content * {
+    -webkit-user-select: text; /* Allow in iframe content */
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
