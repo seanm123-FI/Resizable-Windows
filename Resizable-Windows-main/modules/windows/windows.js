@@ -7,6 +7,7 @@ const windowToolbar = `
         <input type="number" id="windowCount" placeholder="Number of windows" aria-label="Number of windows">
         <button id="createWindowButton" aria-label="Create Windows">Create Windows</button>
         <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
+        <button id="loadBallsGameButton" aria-label="Load Balls Game">Load Balls Game</button>
     </div>
     <div class="status-announcement visually-hidden" aria-live="assertive">
         <span id="activeWindowStatus"></span>
@@ -15,7 +16,7 @@ const windowToolbar = `
         <span id="globalStatusBar" role="status"></span>
     </div>`;
 
-    const windowTemplateString = `
+const windowTemplateString = `
     <div class="window" aria-labelledby="window-header-title" aria-describedby="window-content-description">
         <div class="window-header" tabindex="0">
             <span id="window-header-title"></span>
@@ -25,7 +26,6 @@ const windowToolbar = `
                 <button class="button extend-button" tabindex="0">[ ]</button>
                 <button class="button collapse-button" tabindex="0">---</button>
                 <button class="button pop-out-button" tabindex="0">Pop Out</button>
-                <button class="button pop-in-button" tabindex="0">Pop In</button>
             </div>
         </div>
         <div class="window-content" id="window-content-description">
@@ -45,6 +45,58 @@ const windowToolbar = `
     </div>
 `;
 
+function createWindowForBallsGame() {
+    const gameWindow = createWindowElement();
+     
+    const gameContent = gameWindow.querySelector('.window-content');
+    gameContent.innerHTML = `
+        <iframe id="ballsGameIframe"
+        src="./modules/Random-Spheres/index.html" 
+        style="width: 100%; height: 100%; border: none;"></iframe>`;
+    
+    document.body.appendChild(gameWindow);
+
+    // Ensure new window is immediately brought to front
+    updateZIndexForNewWindow(gameWindow);
+    
+    const windowState = {
+        windowElement: gameWindow,
+        state: 'normal',
+        initialPosition: {
+            width: gameWindow.style.width,
+            height: gameWindow.style.height,
+            left: gameWindow.style.left,
+            top: gameWindow.style.top
+        }
+    };
+    
+    allWindows.push(windowState);
+    addWindowEventListeners(gameWindow, windowState);
+    makeWindowDraggable(gameWindow);
+    console.log('Setting up resizers for game window...');
+    makeWindowResizable(gameWindow);
+    makeWindowBordersResizable(gameWindow);
+    addFocusEventListeners(gameWindow);
+    updateZIndex(gameWindow);
+
+    const iframe = gameContent.querySelector('#ballsGameIframe');
+    iframe.addEventListener('load', () => {
+        // Allow text selection within the iframe
+        iframe.contentDocument.body.style.userSelect = 'auto';
+        
+        // Prevent parent window dragging while interacting with game content
+        const stopParentDrag = (event) => {
+            event.stopPropagation();
+        };
+        iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
+        iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
+        iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
+    });
+        
+    return gameWindow; // Return the created window element for further use.
+}
+
+
 function announceActiveWindow(windowElement) {
     const globalStatusBar = document.getElementById('globalStatusBar');
     if (globalStatusBar) {
@@ -52,6 +104,7 @@ function announceActiveWindow(windowElement) {
         globalStatusBar.innerText = `Active window: ${windowElement.innerText}`;
     }
 }
+
 function updateStatus(windowElement, newStatus = '', isGlobal = false) {
     if (isGlobal) {
         const globalStatusBar = document.getElementById('globalStatusBar');
@@ -67,7 +120,6 @@ function updateStatus(windowElement, newStatus = '', isGlobal = false) {
         }
     }
 }
-
 
 function addFocusEventListeners(windowElement) {
     const focusableElements = windowElement.querySelectorAll('[tabindex], .window-header, .window-content, .resizer, .border-resizer, .button');
@@ -103,13 +155,141 @@ function addFocusEventListeners(windowElement) {
     });
 }
 
+function popOutWindowContent(windowElement) {
+    console.log('Starting popOutWindowContent function');
+    
+    const windowContent = windowElement.querySelector('.window-content');
+    if (!windowContent) {
+        console.error('windowContent not found');
+        return;
+    }
+    console.log('Found windowContent:', windowContent);
 
+    const contentClone = windowContent.cloneNode(true);
+    console.log('Cloned windowContent:', contentClone);
+
+    // Open a new window
+    const popOutWindow = window.open('', '', 'width=2000,height=1800');
+    if (!popOutWindow) {
+        console.error('Failed to open popOutWindow');
+        return;
+    }
+    console.log('Opened new popOutWindow');
+
+    // Create HTML structure for the new window's document
+    popOutWindow.document.open();
+    popOutWindow.document.write('<html><head><title>Pop Out Window</title></head><body></body></html>');
+    popOutWindow.document.write('<style>body { margin: 0; padding: 0; overflow: hidden; }</style>');
+    popOutWindow.document.write('</head><body></body></html>');
+    popOutWindow.document.close();
+    console.log('Written initial HTML structure to the new window');
+
+    // Copy the styles from the parent window to the pop-out window
+    const styles = Array.from(document.styleSheets);
+    styles.forEach(styleSheet => {
+        console.log('Processing stylesheet:', styleSheet.href);
+        try {
+            const rules = Array.from(styleSheet.cssRules);
+            rules.forEach(rule => {
+                const styleElement = popOutWindow.document.createElement('style');
+                styleElement.innerHTML = rule.cssText;
+                popOutWindow.document.head.appendChild(styleElement);
+                console.log('Copied style rule:', rule.cssText);
+            });
+        } catch (e) {
+            console.error('Error copying style rules', e);
+        }
+    });
+
+    // Create a container div to hold the cloned content and maintain styles
+    const containerDiv = popOutWindow.document.createElement('div');
+    containerDiv.classList.add('window');
+    containerDiv.innerHTML = windowElement.innerHTML; // Ensuring the content structure includes all
+
+    // Set the container div to fill the new window
+    containerDiv.style.width = '100%';
+    containerDiv.style.height = '100%';
+    containerDiv.style.position = 'absolute';
+    containerDiv.style.top = '-50';
+    containerDiv.style.left = '0';
+
+    //Remove the window header in the container div of the popped out window
+    const header = containerDiv.querySelector('.window-header');
+    if(header){
+        header.remove();
+        console.log('Removed window header from the container div');
+    }
+
+    popOutWindow.document.body.appendChild(containerDiv);
+    console.log('Appended cloned content to popOutWindow body inside container div');
+
+    // Add detailed structure check
+    console.log('Container structure:', containerDiv.innerHTML);
+
+    // Ensure the container div has appropriate styles
+    console.log('Computed styles for containerDiv:', window.getComputedStyle(containerDiv));
+
+    // Create pop-in button
+    const originalPopOutButton = windowElement.querySelector('.pop-out-button');
+    const popInButton = popOutWindow.document.createElement('button');
+    popInButton.innerText = 'Pop In';
+    popInButton.className = originalPopOutButton.className;  // Apply same classes
+    popInButton.style.cssText = originalPopOutButton.style.cssText;  // Apply same inline styles
+    popInButton.addEventListener('click', () => {
+        console.log('Pop In button clicked');
+        popInWindowContent(popOutWindow, windowElement);
+    });
+
+    // Set the position of the pop-in button
+    popInButton.style.position = 'absolute';
+    popInButton.style.top = `10px`;
+    popInButton.style.left = `1800px`;
+
+    console.log(popInButton.style.top)
+    console.log(popInButton.style.left)
+
+    containerDiv.appendChild(popInButton); // Attach the button directly inside the container div
+    console.log('Appended Pop In button to popOutWindow body');
+
+    // Hide the content in the original window
+    windowContent.style.display = 'none';
+    console.log('Set original window content to display: none');
+}
+
+// Helper function for logging during Pop In
+function popInWindowContent(popOutWindow, originalWindow) {
+    console.log('Starting popInWindowContent function');
+
+    const originalContentArea = originalWindow.querySelector('.window-content');
+    if (!originalContentArea) {
+        console.error('originalContentArea not found');
+        return;
+    }
+
+    originalContentArea.innerHTML = popOutWindow.document.querySelector('.window-content').innerHTML;
+    originalContentArea.style.display = 'block';
+    console.log('Restored content to the original window');
+
+    popOutWindow.close();
+    console.log('Closed popOutWindow');
+
+    addEventListenersToRestoredContent(originalWindow);
+    console.log('Readded event listeners to the restored content');
+}
+
+function addEventListenersToRestoredContent(windowElement) {
+    // Re-add any event listeners to the restored content.
+    makeWindowDraggable(windowElement);
+    makeWindowResizable(windowElement);
+    makeWindowBordersResizable(windowElement);
+}
 
 const mainFunc = () => {
     document.body.innerHTML = windowToolbar;
     const createWindowButton = document.getElementById('createWindowButton');
     const windowCountInput = document.getElementById('windowCount');
     const clearWindowsButton = document.getElementById('clearWindowsButton');
+    const loadBallsGameButton =  document.getElementById('loadBallsGameButton')
 
     const myScript = document.createElement('script');
     document.head.appendChild(myScript);
@@ -132,6 +312,11 @@ const mainFunc = () => {
     const loadState = () => {
         const savedState = localStorage.getItem('windowsState');
         return savedState ? JSON.parse(savedState) : [];
+    };
+
+    const updateZIndexForNewWindow = (newWindowElement) => {
+        // Set the new window to the highest z-index
+        newWindowElement.style.zIndex = ++zIndexCounter;
     };
 
     const updateZIndex = (clickedWindow) => {
@@ -221,6 +406,7 @@ const mainFunc = () => {
         }
         saveState();
     };
+
     clearWindowsButton.addEventListener('click', () => {
         allWindows.forEach(winState => winState.windowElement.remove());
         allWindows = [];
@@ -229,6 +415,82 @@ const mainFunc = () => {
         updateStatus(null, 'Cleared all windows', true);
     });
 
+    loadBallsGameButton.addEventListener('click', () => {
+        const gameWindow = createWindowForBallsGame();
+        updateZIndex(gameWindow);
+    });
+    
+    function createWindowForBallsGame() {
+        const gameWindow = createWindowElement();
+    
+        const gameContent = gameWindow.querySelector('.window-content');
+        gameContent.innerHTML = `
+            <iframe id="ballsGameIframe"
+            src="http://localhost:8000/index.html" 
+            style="width: 100%; height: 100%; border: none;"></iframe>`;
+        
+        document.body.appendChild(gameWindow);
+    
+        // Ensure the new window is immediately brought to front
+        updateZIndexForNewWindow(gameWindow);
+        
+        const windowState = {
+            windowElement: gameWindow,
+            state: 'normal',
+            initialPosition: {
+                width: gameWindow.style.width,
+                height: gameWindow.style.height,
+                left: gameWindow.style.left,
+                top: gameWindow.style.top
+            }
+        };
+        
+        allWindows.push(windowState);
+        addWindowEventListeners(gameWindow, windowState);
+        makeWindowDraggable(gameWindow);
+        console.log('Setting up resizers for game window...');
+        makeWindowResizable(gameWindow);
+        makeWindowBordersResizable(gameWindow);
+        addFocusEventListeners(gameWindow);
+        updateZIndex(gameWindow);
+    
+        // Defer interaction with iframe content until it is fully loaded
+        const iframe = gameContent.querySelector('#ballsGameIframe');
+        
+        iframe.addEventListener('load', () => {
+            console.log("Iframe loaded"); // Add log
+            
+            try {
+                // Allow text selection within the iframe
+                if (iframe.contentDocument && iframe.contentDocument.body) {
+                    console.log("Iframe contentDocument and body are accessible"); // Add successful access log
+                    
+                    iframe.contentDocument.body.style.userSelect = 'auto';
+    
+                    // Prevent parent window dragging while interacting with game content
+                    const stopParentDrag = (event) => {
+                        event.stopPropagation();
+                    };
+                    iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
+                    iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
+                    iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
+                } else {
+                    console.error("Iframe contentDocument or body is not accessible");
+                }
+            } catch (e) {
+                console.error("An error occurred while accessing iframe content: ", e);
+            }
+        });
+    
+        iframe.addEventListener('error', () => {
+            console.error("Iframe failed to load");
+        });
+    
+        return gameWindow; // Return the created window element for further use.
+    }
+    
+    
+    
     const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         const cols = Math.ceil(Math.sqrt(count));
         const rows = Math.ceil(count / cols);
@@ -259,6 +521,7 @@ const mainFunc = () => {
         const closeButton = windowElement.querySelector('.close-button');
         const extendButton = windowElement.querySelector('.extend-button');
         const collapseButton = windowElement.querySelector('.collapse-button');
+        const popOutButton = windowElement.querySelector('.pop-out-button');
         const windowContent = windowElement.querySelector('.window-content');
 
         console.log('closeButton:', closeButton);
@@ -291,6 +554,13 @@ const mainFunc = () => {
         } else {
             console.error('collapseButton is null');
         }
+
+        if (popOutButton) {
+            popOutButton.addEventListener('click', () => {
+                popOutWindowContent(windowElement);
+                saveState();
+            });
+        }    
 
         const header = windowElement.querySelector('.window-header');
         if (header) {
@@ -373,14 +643,15 @@ const mainFunc = () => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'none';
-            resizer.style.opacity = 1; // Ensure consistency
         });
 
         disableWindowDraggable(windowElement);
         disableWindowResizable(windowElement);
 
         const windowContent = windowElement.querySelector('.window-content');
-        windowContent.style.pointerEvents = 'none';
+        windowContent.style.pointerEvents = 'auto';  //updated to auto to allow selection for the loaded content
+        windowContent.style.userSelect = 'auto';
+        windowContent.contentDocument.body.style.userSelect = 'auto'; // Ensure content body can be interacted with
         saveState();
     };
 
@@ -396,7 +667,6 @@ const mainFunc = () => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
         resizers.forEach(resizer => {
             resizer.style.pointerEvents = 'none';
-            resizer.style.opacity = 1; // Ensure consistency
         });
     };
 
@@ -517,8 +787,8 @@ const mainFunc = () => {
 
     const addKeyboardAccessibilityToResizers = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
-        const minWidth = 220;
-        const minHeight = 100;
+        const minWidth = 380;
+        const minHeight = 150;
         const step = 10;
         resizers.forEach(resizer => {
             resizer.addEventListener('keydown', (event) => {
