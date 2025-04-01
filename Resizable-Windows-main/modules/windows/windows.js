@@ -445,7 +445,7 @@ const mainFunc = () => {
 
         const formContent = formWindow.querySelector('.window-content');
         const iframeSrc = "./modules/registration-form/index.html"; // Ensure the path is correct
-        gameContent.innerHTML = `
+        formContent.innerHTML = `
             <iframe id="registrationFormIframe"
             src="${iframeSrc}" 
             style="width: 100%; height: 100%; border: none;"></iframe>`;
