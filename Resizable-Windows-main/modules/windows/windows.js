@@ -8,6 +8,7 @@ const windowToolbar = `
         <button id="createWindowButton" aria-label="Create Windows">Create Windows</button>
         <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
         <button id="loadBallsGameButton" aria-label="Load Balls Game">Load Balls Game</button>
+        <button id="loadRegistrationFormButton" aria-label="Load Registration Form">Load Registration Form</button>
     </div>
     <div class="status-announcement visually-hidden" aria-live="assertive">
         <span id="activeWindowStatus"></span>
@@ -44,58 +45,6 @@ const windowTemplateString = `
         <div class="border-resizer left vertical" role="separator" tabindex="0"></div>
     </div>
 `;
-
-function createWindowForBallsGame() {
-    const gameWindow = createWindowElement();
-     
-    const gameContent = gameWindow.querySelector('.window-content');
-    gameContent.innerHTML = `
-        <iframe id="ballsGameIframe"
-        src="./modules/Random-Spheres/index.html" 
-        style="width: 100%; height: 100%; border: none;"></iframe>`;
-    
-    document.body.appendChild(gameWindow);
-
-    // Ensure new window is immediately brought to front
-    updateZIndexForNewWindow(gameWindow);
-    
-    const windowState = {
-        windowElement: gameWindow,
-        state: 'normal',
-        initialPosition: {
-            width: gameWindow.style.width,
-            height: gameWindow.style.height,
-            left: gameWindow.style.left,
-            top: gameWindow.style.top
-        }
-    };
-    
-    allWindows.push(windowState);
-    addWindowEventListeners(gameWindow, windowState);
-    makeWindowDraggable(gameWindow);
-    console.log('Setting up resizers for game window...');
-    makeWindowResizable(gameWindow);
-    makeWindowBordersResizable(gameWindow);
-    addFocusEventListeners(gameWindow);
-    updateZIndex(gameWindow);
-
-    const iframe = gameContent.querySelector('#ballsGameIframe');
-    iframe.addEventListener('load', () => {
-        // Allow text selection within the iframe
-        iframe.contentDocument.body.style.userSelect = 'auto';
-        
-        // Prevent parent window dragging while interacting with game content
-        const stopParentDrag = (event) => {
-            event.stopPropagation();
-        };
-        iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
-        iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
-        iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
-    });
-        
-    return gameWindow; // Return the created window element for further use.
-}
-
 
 function announceActiveWindow(windowElement) {
     const globalStatusBar = document.getElementById('globalStatusBar');
@@ -289,7 +238,8 @@ const mainFunc = () => {
     const createWindowButton = document.getElementById('createWindowButton');
     const windowCountInput = document.getElementById('windowCount');
     const clearWindowsButton = document.getElementById('clearWindowsButton');
-    const loadBallsGameButton =  document.getElementById('loadBallsGameButton')
+    const loadBallsGameButton =  document.getElementById('loadBallsGameButton');
+    const loadRegistrationFormButton = document.getElementById('loadRegistrationFormButton');
 
     const myScript = document.createElement('script');
     document.head.appendChild(myScript);
@@ -419,15 +369,25 @@ const mainFunc = () => {
         const gameWindow = createWindowForBallsGame();
         updateZIndex(gameWindow);
     });
+
+    loadRegistrationFormButton.addEventListener('click', () => {
+        const formWindow = createWindowForRegistrationForm();
+        updateZIndex(formWindow);
+    })
     
     function createWindowForBallsGame() {
         const gameWindow = createWindowElement();
-    
+         
         const gameContent = gameWindow.querySelector('.window-content');
+        const iframeSrc = "./modules/Random-Spheres/index.html"; // Ensure the path is correct
         gameContent.innerHTML = `
             <iframe id="ballsGameIframe"
-            src="http://localhost:8000/index.html" 
+            src="${iframeSrc}" 
             style="width: 100%; height: 100%; border: none;"></iframe>`;
+
+        // Set initial position if not set
+        gameWindow.style.left = `${Math.max(0, (window.innerWidth - 400) / 2)}px`;
+        gameWindow.style.top = `${Math.max(0, (window.innerHeight - 300) / 2)}px`;
         
         document.body.appendChild(gameWindow);
     
@@ -448,48 +408,103 @@ const mainFunc = () => {
         allWindows.push(windowState);
         addWindowEventListeners(gameWindow, windowState);
         makeWindowDraggable(gameWindow);
-        console.log('Setting up resizers for game window...');
         makeWindowResizable(gameWindow);
         makeWindowBordersResizable(gameWindow);
         addFocusEventListeners(gameWindow);
         updateZIndex(gameWindow);
     
-        // Defer interaction with iframe content until it is fully loaded
         const iframe = gameContent.querySelector('#ballsGameIframe');
-        
         iframe.addEventListener('load', () => {
-            console.log("Iframe loaded"); // Add log
-            
+            console.log("Iframe loaded successfully");
+            // Allow text selection within the iframe
             try {
-                // Allow text selection within the iframe
-                if (iframe.contentDocument && iframe.contentDocument.body) {
-                    console.log("Iframe contentDocument and body are accessible"); // Add successful access log
-                    
-                    iframe.contentDocument.body.style.userSelect = 'auto';
-    
-                    // Prevent parent window dragging while interacting with game content
-                    const stopParentDrag = (event) => {
-                        event.stopPropagation();
-                    };
-                    iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
-                    iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
-                    iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
-                } else {
-                    console.error("Iframe contentDocument or body is not accessible");
-                }
+                iframe.contentDocument.body.style.userSelect = 'auto';
+                
+                // Prevent parent window dragging while interacting with game content
+                const stopParentDrag = (event) => {
+                    event.stopPropagation();
+                };
+                iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
+                iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
+                iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
+                
             } catch (e) {
-                console.error("An error occurred while accessing iframe content: ", e);
+                console.error("Iframe content is not accessible:", e);
             }
         });
     
         iframe.addEventListener('error', () => {
-            console.error("Iframe failed to load");
+            console.error("Error loading iframe content. Check the path and ensure the file exists.");
         });
-    
+            
         return gameWindow; // Return the created window element for further use.
     }
     
+    function createWindowForRegistrationForm() {
+        const formWindow = createWindowElement();
+
+        const formContent = formWindow.querySelector('.window-content');
+        const iframeSrc = "./modules/registration-form/index.html"; // Ensure the path is correct
+        gameContent.innerHTML = `
+            <iframe id="registrationFormIframe"
+            src="${iframeSrc}" 
+            style="width: 100%; height: 100%; border: none;"></iframe>`;
+
+        // Set initial position if not set
+        formWindow.style.left = `${Math.max(0, (window.innerWidth - 400) / 2)}px`;
+        formWindow.style.top = `${Math.max(0, (window.innerHeight - 300) / 2)}px`;
+        
+        document.body.appendChild(formWindow);
     
+        // Ensure the new window is immediately brought to front
+        updateZIndexForNewWindow(formWindow);
+
+
+        const windowState = {
+            windowElement: formWindow,
+            state: 'normal',
+            initialPosition: {
+                width: formWindow.style.width,
+                height: formWindow.style.height,
+                left: formWindow.style.left,
+                top: formWindow.style.top
+            }
+        };
+        
+        allWindows.push(windowState);
+        addWindowEventListeners(formWindow, windowState);
+        makeWindowDraggable(formWindow);
+        makeWindowResizable(formWindow);
+        makeWindowBordersResizable(formWindow);
+        addFocusEventListeners(formWindow);
+        updateZIndex(formWindow);
+    
+        const iframe = gameContent.querySelector('#registrationFormIframe');
+        iframe.addEventListener('load', () => {
+            console.log("Iframe loaded successfully");
+            // Allow text selection within the iframe
+            try {
+                iframe.contentDocument.body.style.userSelect = 'auto';
+                
+                // Prevent parent window dragging while interacting with game content
+                const stopParentDrag = (event) => {
+                    event.stopPropagation();
+                };
+                iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
+                iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
+                iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
+                
+            } catch (e) {
+                console.error("Iframe content is not accessible:", e);
+            }
+        });
+    
+        iframe.addEventListener('error', () => {
+            console.error("Error loading iframe content. Check the path and ensure the file exists.");
+        });
+            
+        return formWindow; // Return the created window element for further use.
+    }
     
     const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
         const cols = Math.ceil(Math.sqrt(count));
@@ -734,40 +749,40 @@ const mainFunc = () => {
 
     const makeWindowDraggable = (windowElement) => {
         let isDragging = false, startX, startY, startLeft, startTop;
-
+    
         const onMouseDown = (event) => {
             if (event.target.closest('.window-header')) {
                 isDragging = true;
                 startX = event.clientX;
                 startY = event.clientY;
-
-                startLeft = parseInt(windowElement.style.left || 0, 10);
-                startTop = parseInt(windowElement.style.top || 0, 10);
-
+    
+                startLeft = parseFloat(windowElement.style.left) || 0;
+                startTop = parseFloat(windowElement.style.top) || 0;
+    
                 document.body.classList.add('noselect');
-
+    
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
                 event.preventDefault();
             }
         };
-
+    
         const onMouseMove = (event) => {
             if (isDragging) {
                 const dx = event.clientX - startX;
                 const dy = event.clientY - startY;
-
+    
                 let newLeft = startLeft + dx;
                 let newTop = startTop + dy;
-
+    
                 newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - windowElement.offsetWidth));
                 newTop = Math.max(0, Math.min(newTop, window.innerHeight - windowElement.offsetHeight - TOOLBAR_HEIGHT));
-
+    
                 windowElement.style.left = `${newLeft}px`;
                 windowElement.style.top = `${newTop}px`;
             }
         };
-
+    
         const onMouseUp = () => {
             isDragging = false;
             document.body.classList.remove('noselect');
@@ -775,7 +790,7 @@ const mainFunc = () => {
             document.removeEventListener('mouseup', onMouseUp);
             saveState();
         };
-
+    
         const header = windowElement.querySelector('.window-header');
         if (header) {
             header.onmousedown = onMouseDown;
@@ -784,6 +799,7 @@ const mainFunc = () => {
             console.error('Header element is not found.');
         }
     };
+    
 
     const addKeyboardAccessibilityToResizers = (windowElement) => {
         const resizers = windowElement.querySelectorAll('.resizer, .border-resizer');
@@ -873,87 +889,99 @@ const mainFunc = () => {
         let startX, startY, startWidth, startHeight, startLeft, startTop, resizer;
         const minWidth = 380;
         const minHeight = 150;
-
+    
+        // Convert style values to numbers and any undefined values default to the predefined min value
+        const parseStyleValue = (value, defaultValue) => {
+            const parsedValue = parseFloat(value);
+            return isNaN(parsedValue) ? defaultValue : parsedValue;
+        };
+    
         const onMouseDown = (event) => {
             event.preventDefault();
             event.stopPropagation();
-
-            if (windowElement.style.position === 'fixed') return;
+    
             isResizing = true;
             startX = event.clientX;
             startY = event.clientY;
-            startWidth = parseInt(windowElement.style.width, 10);
-            startHeight = parseInt(windowElement.style.height, 10);
-            startLeft = parseInt(windowElement.style.left, 10);
-            startTop = parseInt(windowElement.style.top, 10);
+            startWidth = parseStyleValue(windowElement.style.width, minWidth);
+            startHeight = parseStyleValue(windowElement.style.height, minHeight);
+            startLeft = parseStyleValue(windowElement.style.left, windowElement.offsetLeft);
+            startTop = parseStyleValue(windowElement.style.top, windowElement.offsetTop);
             resizer = event.target.closest('.resizer');
-
+            
+            console.log(`Mouse down on resizer: ${resizer.classList.value}`, { startX, startY, startWidth, startHeight, startLeft, startTop });
+    
+            // Prevent iframe from capturing events
+            const iframe = windowElement.querySelector('iframe');
+            if (iframe) {
+                iframe.style.pointerEvents = 'none';
+            }
+    
             updateZIndex(windowElement);
             document.body.classList.add('noselect');
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         };
-
+    
         const onMouseMove = (event) => {
             if (!isResizing) return;
             const dx = event.clientX - startX;
             const dy = event.clientY - startY;
-
+    
             let newWidth, newHeight, newLeft, newTop;
-
-            // Determine the resizer being dragged and update the window size accordingly
+    
             switch (resizer.classList[1]) {
                 case 'top-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight - dy;
                     newLeft = startLeft + dx;
                     newTop = startTop + dy;
-
+    
                     if (newWidth > minWidth && newLeft >= 0) {
                         windowElement.style.width = `${newWidth}px`;
                         windowElement.style.left = `${newLeft}px`;
                     }
-
+    
                     if (newHeight > minHeight && newTop >= 0) {
                         windowElement.style.height = `${newHeight}px`;
                         windowElement.style.top = `${newTop}px`;
                     }
                     break;
-
+    
                 case 'top-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight - dy;
                     newTop = startTop + dy;
-
+    
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
-
+    
                     if (newHeight > minHeight && newTop >= 0) {
                         windowElement.style.height = `${newHeight}px`;
                         windowElement.style.top = `${newTop}px`;
                     }
                     break;
-
+    
                 case 'bottom-left':
                     newWidth = startWidth - dx;
                     newHeight = startHeight + dy;
                     newLeft = startLeft + dx;
-
+    
                     if (newWidth > minWidth && newLeft >= 0) {
                         windowElement.style.width = `${newWidth}px`;
                         windowElement.style.left = `${newLeft}px`;
                     }
-
+    
                     if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
                         windowElement.style.height = `${newHeight}px`;
                     }
                     break;
-
+    
                 case 'bottom-right':
                     newWidth = startWidth + dx;
                     newHeight = startHeight + dy;
-
+    
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
@@ -962,106 +990,142 @@ const mainFunc = () => {
                     }
                     break;
             }
+    
+            console.log(`Mouse move on resizer: ${resizer.classList.value}`, { dx, dy, newWidth, newHeight, newLeft, newTop });
         };
-
+    
         const onMouseUp = () => {
             isResizing = false;
             document.body.classList.remove('noselect');
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+    
+            // Re-enable iframe interactions
+            const iframe = windowElement.querySelector('iframe');
+            if (iframe) {
+                iframe.style.pointerEvents = 'auto';
+            }
+    
+            console.log(`Mouse up on resizer: ${resizer.classList.value}`);
             saveState();
         };
-
+    
         resizers.forEach(resizer => {
+            console.log(`Adding listener to resizer: ${resizer.classList.value}`);
             resizer.addEventListener('mousedown', onMouseDown);
         });
     };
-
+    
     const makeWindowBordersResizable = (windowElement) => {
         const borderResizers = windowElement.querySelectorAll('.border-resizer');
         let isResizing = false;
         let startX, startY, startWidth, startHeight, startLeft, startTop, borderResizer;
         const minWidth = 380;
         const minHeight = 150;
-
+    
+        // Convert style values to numbers and any undefined values default to the predefined min value
+        const parseStyleValue = (value, defaultValue) => {
+            const parsedValue = parseFloat(value);
+            return isNaN(parsedValue) ? defaultValue : parsedValue;
+        };
+    
         const onMouseDown = (event) => {
             isResizing = true;
             startX = event.clientX;
             startY = event.clientY;
-
-            startWidth = parseInt(windowElement.style.width, 10);
-            startHeight = parseInt(windowElement.style.height, 10);
-            startLeft = parseInt(windowElement.style.left, 10);
-            startTop = parseInt(windowElement.style.top, 10);
+    
+            startWidth = parseStyleValue(windowElement.style.width, minWidth);
+            startHeight = parseStyleValue(windowElement.style.height, minHeight);
+            startLeft = parseStyleValue(windowElement.style.left, windowElement.offsetLeft);
+            startTop = parseStyleValue(windowElement.style.top, windowElement.offsetTop);
             borderResizer = event.target.closest('.border-resizer');
-
+    
+            console.log(`Mouse down on border resizer: ${borderResizer.classList.value}`, { startX, startY, startWidth, startHeight, startLeft, startTop });
+    
+            // Prevent iframe from capturing events
+            const iframe = windowElement.querySelector('iframe');
+            if (iframe) {
+                iframe.style.pointerEvents = 'none';
+            }
+    
             updateZIndex(windowElement);
-
+    
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
             event.preventDefault();
         };
-
+    
         const onMouseMove = (event) => {
             if (!isResizing) return;
             const dx = event.clientX - startX;
             const dy = event.clientY - startY;
-
+    
             let newWidth, newHeight, newLeft, newTop;
-
+    
             switch (borderResizer.classList[1]) {
                 case 'top':
                     newHeight = startHeight - dy;
                     newTop = startTop + dy;
-
+    
                     if (newHeight > minHeight && newTop >= 0) {
                         windowElement.style.height = `${newHeight}px`;
                         windowElement.style.top = `${newTop}px`;
                     }
                     break;
-
+    
                 case 'bottom':
                     newHeight = startHeight + dy;
-
+    
                     if (newHeight > minHeight && (startTop + newHeight) <= window.innerHeight - TOOLBAR_HEIGHT) {
                         windowElement.style.height = `${newHeight}px`;
                     }
                     break;
-
+    
                 case 'left':
                     newWidth = startWidth - dx;
                     newLeft = startLeft + dx;
-
+    
                     if (newWidth > minWidth && newLeft >= 0) {
                         windowElement.style.width = `${newWidth}px`;
                         windowElement.style.left = `${newLeft}px`;
                     }
                     break;
-
+    
                 case 'right':
                     newWidth = startWidth + dx;
-
+    
                     if (newWidth > minWidth && (startLeft + newWidth) <= window.innerWidth) {
                         windowElement.style.width = `${newWidth}px`;
                     }
                     break;
             }
+    
+            console.log(`Mouse move on border resizer: ${borderResizer.classList.value}`, { dx, dy, newWidth, newHeight, newLeft, newTop });
         };
-
+    
         const onMouseUp = () => {
             isResizing = false;
             document.body.classList.remove('noselect');
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+    
+            // Re-enable iframe interactions
+            const iframe = windowElement.querySelector('iframe');
+            if (iframe) {
+                iframe.style.pointerEvents = 'auto';
+            }
+    
+            console.log(`Mouse up on border resizer: ${borderResizer.classList.value}`);
             saveState();
         };
-
+    
         borderResizers.forEach(borderResizer => {
-            borderResizer.style.display = 'block';
+            console.log(`Adding listener to border resizer: ${borderResizer.classList.value}`);
             borderResizer.addEventListener('mousedown', onMouseDown);
         });
     };
-
+    
+    
     window.addEventListener('load', () => {
         const savedState = loadState();
         if (savedState.length > 0) {
