@@ -91,8 +91,9 @@ document.getElementById('restore-form').addEventListener('click', function() {
             } else {
                 // Create missing fields dynamically
                 const fieldType = 'text'; // Default to text type for restored fields
+                const fieldLabel = document.getElementById('field-type').selectedOptions[0].text;
                 const newFieldHTML = `
-                    <label for="${key}">${key}:</label>
+                    <label for="${key}">${fieldLabel}:</label>
                     <input type="${fieldType}" id="${key}" name="${key}" required value="${savedData[key]}">
                 `;
                 form.insertAdjacentHTML('beforeend', newFieldHTML);
