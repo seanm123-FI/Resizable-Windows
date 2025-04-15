@@ -28,6 +28,9 @@ document.body.innerHTML = registrationFormHTML;
 
 const form = document.getElementById('registration-form');
 
+//Array to hold all of the different fields
+let fieldsArray = [];
+
 // Add event listener for form submission
 form.addEventListener('submit', function(event) {
     event.preventDefault();
@@ -52,55 +55,57 @@ document.getElementById('add-field-button').addEventListener('click', function()
     const fieldId = `field-${Date.now()}`;
     const fieldLabel = document.getElementById('field-type').selectedOptions[0].text;
 
-    const newFieldHTML = `
-    <div class="form-field">
-        <label for="${fieldId}">${fieldLabel}:</label>
-        <input type="${fieldType}" id="${fieldId}" name="${fieldId}" required>
-    </div>
-    `;
+    const newField = { 
+        name: fieldId,
+        type: fieldType, 
+        label: fieldLabel, 
+        value: ''
+    }
 
-    form.insertAdjacentHTML('beforeend', newFieldHTML);
+    fieldsArray.push(newField);
+    renderFields();
 });
-    // Function to remove the last added field from the form
-    document.getElementById('remove-field-button').addEventListener('click', function() {
-        const lastField = form.querySelector('.form-field:last-of-type');
-        if (lastField) {
-            lastField.remove();
-        }
+// Function to remove the last added field from the form
+document.getElementById('remove-field-button').addEventListener('click', function() {
+    fieldsArray.pop();
+    renderFields();
+});
+
+//function to render the fields in the fields
+function renderFields() {
+    form.innerHTML = '';
+    fieldsArray.forEach(field => {
+        const fieldHTML = `
+        <div class="form-field">
+            <label for="${field.name}">${field.label}:</label>
+            <input type="${field.type}" id="${field.name}" name="${field.name}" required value="${field.value}">
+        </div>
+        `;
+        form.insertAdjacentHTML('beforeend', fieldHTML);
     });
+}
 
 // Function to save form data to local storage
 document.getElementById('save-form').addEventListener('click', function() {
     const formData = new FormData(form);
-    const formEntries = {};
-    for (let [key, value] of formData.entries()) {
-        formEntries[key] = value;
-    }
-    localStorage.setItem('formData', JSON.stringify(formEntries));
+    fieldsArray.forEach(field => {
+        field.value = formData.get(field.name) || '';
+    });
+    localStorage.setItem('formFields', JSON.stringify(fieldsArray));
     alert('Form data saved.');
 });
 
 // Function to restore form data from local storage
 document.getElementById('restore-form').addEventListener('click', function() {
-    const savedData = JSON.parse(localStorage.getItem('formData'));
-    if (savedData) {
-        for (let key in savedData) {
-            let input = form.querySelector(`[name="${key}"]`);
-            if (input) {
-                input.value = savedData[key];
-            } else {
-                // Create missing fields dynamically
-                const fieldType = 'text'; // Default to text type for restored fields
-                const fieldLabel = document.getElementById('field-type').selectedOptions[0].text;
-                const newFieldHTML = `
-                    <label for="${key}">${fieldLabel}:</label>
-                    <input type="${fieldType}" id="${key}" name="${key}" required value="${savedData[key]}">
-                `;
-                form.insertAdjacentHTML('beforeend', newFieldHTML);
-            }
-        }
+    const savedFields = JSON.parse(localStorage.getItem('formFields'));
+    if (savedFields) {
+        fieldsArray = savedFields;
+        renderFields();
         alert('Form data restored.');
     } else {
         alert('No saved form data found.');
     }
 });
+
+// Initial Render
+renderFields();
