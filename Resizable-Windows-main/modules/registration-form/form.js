@@ -1,34 +1,50 @@
+import { validationRules } from './validationRules.js';
+
 const registrationFormHTML = `
 <div id="registration-container">
+    <div class="header-container">
         <h2>Registration Form</h2>
-        <button id="save-form">Save Form Data</button>
-        <button id="restore-form">Restore Form Data</button>
+        <select id="country-select">
+            <option value="en-us">US</option>
+            <option value="en-uk">UK</option>
+            <option value="en-ie">IE</option>
+            <option value="en-au">AU</option>
+            <option value="de-de">DE</option>
+            <option value="fr-fr">FR</option>
+        </select>
+    </div>
+    <label for="field-type">Select Field Type:</label>
+    <select id="field-type">
+        <option value="text">First Name</option>
+        <option value="text">Last Name</option>
+        <option value="email">Email</option>
+        <option value="tel">Phone</option>
+        <option value="address">Address Line 1</option>
+        <option value="address">Address Line 2</option>
+        <option value="town">Town</option>
+        <option value="city">City</option>
+        <option value="country">Country</option>
+        <option value="postcode">Postcode</option>
+    </select>
+    <div>
         <button id="add-field-button">Add Field</button>
         <button id="remove-field-button">Remove Field</button>
-        <label for="field-type">Select Field Type:</label>
-        <select id="field-type">
-            <option value="text">First Name</option>
-            <option value="text">Last Name</option>
-            <option value="email">Email</option>
-            <option value="tel">Phone</option>
-            <option value="address">Address Line 1</option>
-            <option value="address">Address Line 2</option>
-            <option value="town">Town</option>
-            <option value="city">City</option>
-            <option value="country">Country</option>
-            <option value="postcode">Postcode</option>
-        </select>
-        <form id="registration-form">
-        </form>
-        <input type="submit" value="Register">
+        <div id="fields-container"></div>
+        <button id="save-form">Save Form Data</button>
+        <button id="restore-form">Restore Form Data</button>
     </div>
+    <form id="registration-form">
+    </form>
+    <input type="submit" value="Register">
+</div>
 `;
 
 document.body.innerHTML = registrationFormHTML;
 
 const form = document.getElementById('registration-form');
+const fieldsContainer = document.getElementById('fields-container');
 
-//Array to hold all of the different fields
+// Array to hold all of the different fields
 let fieldsArray = [];
 
 // Add event listener for form submission
@@ -60,36 +76,73 @@ document.getElementById('add-field-button').addEventListener('click', function()
         type: fieldType, 
         label: fieldLabel, 
         value: ''
-    }
+    };
 
     fieldsArray.push(newField);
     renderFields();
 });
+
 // Function to remove the last added field from the form
 document.getElementById('remove-field-button').addEventListener('click', function() {
     fieldsArray.pop();
     renderFields();
 });
 
-//function to render the fields in the fields
+// Function to render the fields
 function renderFields() {
-    form.innerHTML = '';
+    fieldsContainer.innerHTML = '';  // Clear the fields container
     fieldsArray.forEach(field => {
         const fieldHTML = `
-        <div class="form-field">
+            <div class="form-field">
             <label for="${field.name}">${field.label}:</label>
-            <input type="${field.type}" id="${field.name}" name="${field.name}" required value="${field.value}">
-        </div>
+            <input type="${field.type}" id="${field.name}" name="${field.name}" value="${field.value}" required>
+            <span class="validation-message" id="validation-${field.name}"></span>
+            </div>
         `;
-        form.insertAdjacentHTML('beforeend', fieldHTML);
+        fieldsContainer.insertAdjacentHTML('beforeend', fieldHTML);  // Insert the new field into the fields container
+
+        if (field.type === 'tel') {
+            attachPhoneValidation(document.getElementById(field.name)); // Re-attach phone validation
+        }
+    });
+}
+
+
+// Function to validate rules for the selected country
+function validateField(type, value) {
+    const selectedCountry = document.getElementById('country-select').value;
+    const countryRules = validationRules[selectedCountry];
+
+    if (type === 'phone' && countryRules.testPattern) {
+        if (!countryRules.testPattern.test(value)) {
+            return `Invalid phone number for ${selectedCountry}`;
+        }
+    }
+    return '';
+}
+
+// Function to handle phone validation
+function attachPhoneValidation(inputElement) {
+    inputElement.addEventListener('blur', function(event) {
+        const validationMessage = document.getElementById(`validation-${inputElement.id}`);
+        const errorMessage = validateField('phone', event.target.value);
+        if (errorMessage) {
+            validationMessage.innerText = errorMessage;
+            validationMessage.style.display = "block";
+        } else {
+            validationMessage.style.display = "none";
+        }
     });
 }
 
 // Function to save form data to local storage
 document.getElementById('save-form').addEventListener('click', function() {
-    const formData = new FormData(form);
     fieldsArray.forEach(field => {
-        field.value = formData.get(field.name) || '';
+        const fieldElement = document.getElementById(field.name);
+        if (fieldElement) {
+            field.value = fieldElement.value;
+            console.log(`Saving field: ${field.name}, Value: ${field.value}`);
+        }
     });
     localStorage.setItem('formFields', JSON.stringify(fieldsArray));
     alert('Form data saved.');
@@ -99,6 +152,7 @@ document.getElementById('save-form').addEventListener('click', function() {
 document.getElementById('restore-form').addEventListener('click', function() {
     const savedFields = JSON.parse(localStorage.getItem('formFields'));
     if (savedFields) {
+        console.log('Restoring fields:', savedFields);
         fieldsArray = savedFields;
         renderFields();
         alert('Form data restored.');
