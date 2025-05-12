@@ -9,6 +9,7 @@ const windowToolbar = `
         <button id="clearWindowsButton" aria-label="Clear Windows">Clear Windows</button>
         <button id="loadBallsGameButton" aria-label="Load Balls Game">Load Balls Game</button>
         <button id="loadRegistrationFormButton" aria-label="Load Registration Form">Load Registration Form</button>
+        <button id="loadSpreadsheetButton" aria-label="Load Spreadsheet">Load Spreadsheet</button>
     </div>
     <div class="status-announcement visually-hidden" aria-live="assertive">
         <span id="activeWindowStatus"></span>
@@ -240,6 +241,7 @@ const mainFunc = () => {
     const clearWindowsButton = document.getElementById('clearWindowsButton');
     const loadBallsGameButton =  document.getElementById('loadBallsGameButton');
     const loadRegistrationFormButton = document.getElementById('loadRegistrationFormButton');
+    const loadSpreadsheetButton = document.getElementById('loadSpreadsheetButton')
 
     const myScript = document.createElement('script');
     document.head.appendChild(myScript);
@@ -374,6 +376,11 @@ const mainFunc = () => {
         const formWindow = createWindowForRegistrationForm();
         updateZIndex(formWindow);
     })
+
+    loadSpreadsheetButton.addEventListener('click', () => {
+        const spreadsheetWindow = createWindowForSpreadsheet();
+        updateZIndex(spreadsheetWindow);
+    })
     
     function createWindowForBallsGame() {
         const gameWindow = createWindowElement();
@@ -504,6 +511,71 @@ const mainFunc = () => {
         });
             
         return formWindow; // Return the created window element for further use.
+    }
+
+    function createWindowForSpreadsheet() {
+        spreadsheetWindow = createWindowElement();
+
+        const spreadsheetContent = spreadsheetWindow.querySelector('.window-content');
+        const iframeSrc = "./modules/spreadsheet/index.html"; // Ensure the path is correct
+        spreadsheetContent.innerHTML = `
+            <iframe id="spreadsheetIframe"
+            src="${iframeSrc}" 
+            style="width: 100%; height: 100%; border: none;"></iframe>`;
+
+        // Set initial position if not set
+        spreadsheetWindow.style.left = `${Math.max(0, (window.innerWidth - 400) / 2)}px`;
+        spreadsheetWindow.style.top = `${Math.max(0, (window.innerHeight - 300) / 2)}px`;
+        
+        document.body.appendChild(spreadsheetWindow);
+    
+        // Ensure the new window is immediately brought to front
+        updateZIndexForNewWindow(spreadsheetWindow);
+
+        const windowState = {
+            windowElement: spreadsheetWindow,
+            state: 'normal',
+            initialPosition: {
+                width: spreadsheetWindow.style.width,
+                height: spreadsheetWindow.style.height,
+                left: spreadsheetWindow.style.left,
+                top: spreadsheetWindow.style.top
+            }
+        };
+
+        allWindows.push(windowState);
+        addWindowEventListeners(spreadsheetWindow, windowState);
+        makeWindowDraggable(spreadsheetWindow);
+        makeWindowResizable(spreadsheetWindow);
+        makeWindowBordersResizable(spreadsheetWindow);
+        addFocusEventListeners(spreadsheetWindow);
+        updateZIndex(spreadsheetWindow);
+
+        const iframe = gameContent.querySelector('#spreadsheetIframe');
+        iframe.addEventListener('load', () => {
+            console.log("Iframe loaded successfully");
+            // Allow text selection within the iframe
+            try {
+                iframe.contentDocument.body.style.userSelect = 'auto';
+                
+                // Prevent parent window dragging while interacting with game content
+                const stopParentDrag = (event) => {
+                    event.stopPropagation();
+                };
+                iframe.contentWindow.addEventListener('mousedown', stopParentDrag);
+                iframe.contentWindow.addEventListener('mousemove', stopParentDrag);
+                iframe.contentWindow.addEventListener('mouseup', stopParentDrag);
+                
+            } catch (e) {
+                console.error("Iframe content is not accessible:", e);
+            }
+        });
+    
+        iframe.addEventListener('error', () => {
+            console.error("Error loading iframe content. Check the path and ensure the file exists.");
+        });
+            
+        return spreadsheetWindow; // Return the created window element for further use.
     }
     
     const calcWindowPosition = (index, count, windowWidth, windowHeight) => {
