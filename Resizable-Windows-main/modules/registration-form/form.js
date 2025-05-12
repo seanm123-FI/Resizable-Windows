@@ -7,10 +7,10 @@ const registrationFormHTML = `
         <select id="country-select">
             <option value="en-us">US</option>
             <option value="en-uk">UK</option>
-            <option value="en-ie">IE</option>
-            <option value="en-au">AU</option>
-            <option value="de-de">DE</option>
-            <option value="fr-fr">FR</option>
+            <option value="en-ie">Ireland</option>
+            <option value="en-au">Australia</option>
+            <option value="de-de">Germany</option>
+            <option value="fr-fr">France</option>
         </select>
     </div>
     <label for="field-type">Select Field Type:</label>
@@ -33,8 +33,7 @@ const registrationFormHTML = `
         <button id="save-form">Save Form Data</button>
         <button id="restore-form">Restore Form Data</button>
     </div>
-    <form id="registration-form">
-    </form>
+    <form id="registration-form"></form>
     <input type="submit" value="Register">
 </div>
 `;
@@ -44,7 +43,7 @@ document.body.innerHTML = registrationFormHTML;
 const form = document.getElementById('registration-form');
 const fieldsContainer = document.getElementById('fields-container');
 
-// Array to hold all of the different fields
+// Array to hold dynamically added fields
 let fieldsArray = [];
 
 // Add event listener for form submission
@@ -88,50 +87,58 @@ document.getElementById('remove-field-button').addEventListener('click', functio
     renderFields();
 });
 
+// Email validation function
+function validateEmail(email) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email) ? '' : 'Invalid email address';
+}
+
+// Function to validate rules for the selected country
+function validateField(type, value) {
+    let errorMessage = '';
+
+    switch (type) {
+        case 'email':
+            errorMessage = validateEmail(value);
+            break;
+        case 'tel':
+            const selectedCountry = document.getElementById('country-select').value;
+            const countryRules = validationRules[selectedCountry];
+            if (!countryRules.testPattern.test(value)) {
+                errorMessage = `Invalid phone number for ${selectedCountry}`;
+            }
+            break;
+        // Add more cases if needed
+        default:
+            errorMessage = value.trim() === '' ? 'This field cannot be empty' : '';
+    }
+
+    return errorMessage;
+}
+
 // Function to render the fields
 function renderFields() {
     fieldsContainer.innerHTML = '';  // Clear the fields container
     fieldsArray.forEach(field => {
         const fieldHTML = `
-            <div class="form-field">
+        <div class="form-field">
             <label for="${field.name}">${field.label}:</label>
             <input type="${field.type}" id="${field.name}" name="${field.name}" value="${field.value}" required>
             <span class="validation-message" id="validation-${field.name}"></span>
-            </div>
+        </div>
         `;
         fieldsContainer.insertAdjacentHTML('beforeend', fieldHTML);  // Insert the new field into the fields container
 
-        if (field.type === 'tel') {
-            attachPhoneValidation(document.getElementById(field.name)); // Re-attach phone validation
-        }
-    });
-}
-
-
-// Function to validate rules for the selected country
-function validateField(type, value) {
-    const selectedCountry = document.getElementById('country-select').value;
-    const countryRules = validationRules[selectedCountry];
-
-    if (type === 'phone' && countryRules.testPattern) {
-        if (!countryRules.testPattern.test(value)) {
-            return `Invalid phone number for ${selectedCountry}`;
-        }
-    }
-    return '';
-}
-
-// Function to handle phone validation
-function attachPhoneValidation(inputElement) {
-    inputElement.addEventListener('blur', function(event) {
-        const validationMessage = document.getElementById(`validation-${inputElement.id}`);
-        const errorMessage = validateField('phone', event.target.value);
-        if (errorMessage) {
-            validationMessage.innerText = errorMessage;
-            validationMessage.style.display = "block";
-        } else {
-            validationMessage.style.display = "none";
-        }
+        document.getElementById(field.name).addEventListener('blur', function(event) {
+            const validationMessage = document.getElementById(`validation-${field.name}`);
+            const errorMessage = validateField(field.type, event.target.value);
+            if (errorMessage) {
+                validationMessage.innerText = errorMessage;
+                validationMessage.style.display = "block";
+            } else {
+                validationMessage.style.display = "none";
+            }
+        });
     });
 }
 
