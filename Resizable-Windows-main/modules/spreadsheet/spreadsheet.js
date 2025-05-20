@@ -4,10 +4,14 @@ const spreadsheetContainer = document.getElementById('spreadsheet-container');
 // HTML structure for the controls and the table
 const controlsHTML = `
     <div class="controls">
-        <input type="file" id="fileInput" accept=".csv">
+        <span>Current Delimiter: <span id="detected-delimiter">N/A</span></span>
+        <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
         <button id="saveButton">Save</button>
     </div>
-    <table id="spreadsheetTable"></table>
+    <table id="spreadsheetTable">
+        <thead></thead>
+        <tbody></tbody>
+    </table>
 `;
 
 // Insert the controls and table into the container
@@ -16,25 +20,48 @@ spreadsheetContainer.innerHTML = controlsHTML;
 // Get references to the file input, save button, and table
 const fileInput = document.getElementById('fileInput');
 const saveButton = document.getElementById('saveButton');
+const detectedDelimiter = document.getElementById('detected-delimiter');
 const spreadsheetTable = document.getElementById('spreadsheetTable');
 
-// Function to parse CSV text into a 2D array
-function parseCSV(csvText) {
-    const rows = csvText.trim().split('\n');
-    return rows.map(row => row.split(','));
+// Function to parse text into a 2D array based on the delimiter
+function parseText(text, delimiter = ',') {
+    const rows = text.trim().split('\n');
+    return rows.map(row => row.split(delimiter));
+}
+
+// Function to detect the delimiter used in the CSV file
+function detectDelimiter(text) {
+    const firstLine = text.split('\n')[0];
+
+    const delimiters = [',', ';', '|'];
+    let bestDelimiter = delimiters[0];
+    let maxCount = 0;
+
+    delimiters.forEach(delimiter => {
+        const count = (firstLine.split(delimiter).length - 1);
+        if (count > maxCount) {
+            maxCount = count;
+            bestDelimiter = delimiter;
+        }
+    });
+
+    return bestDelimiter;
 }
 
 // Function to generate the table from a 2D array
 function generateTable(data) {
-    // Clear any existing table content
-    spreadsheetTable.innerHTML = '';
+    const tHead = spreadsheetTable.querySelector('thead');
+    const tBody = spreadsheetTable.querySelector('tbody');
 
-    // Create the table header
-    const tableHead = document.createElement('thead');
+    tHead.innerHTML = '';
+    tBody.innerHTML = '';
+
     const headerRow = document.createElement('tr');
 
-    // Ensure there is data and create a header row using the first row
     if (data.length > 0) {
+        const th = document.createElement('th');
+        headerRow.appendChild(th);
+
         data[0].forEach((header, index) => {
             const th = document.createElement('th');
             const inputField = document.createElement('input');
@@ -42,7 +69,7 @@ function generateTable(data) {
             inputField.value = header;
             inputField.setAttribute('data-row', 0);
             inputField.setAttribute('data-col', index);
-            
+
             inputField.setAttribute('draggable', true);
             inputField.addEventListener('dragstart', handleDragStart, false);
             inputField.addEventListener('dragover', handleDragOver, false);
@@ -53,17 +80,15 @@ function generateTable(data) {
         });
     }
 
-    tableHead.appendChild(headerRow);
-    spreadsheetTable.appendChild(tableHead);
+    tHead.appendChild(headerRow);
 
-    // Create a table body element
-    const tableBody = document.createElement('tbody');
-
-    // Iterate over each row of data starting from the second row (since first row is header)
     data.slice(1).forEach((row, rowIndex) => {
         const tableRow = document.createElement('tr');
 
-        // Iterate over each cell of the row
+        const numberCell = document.createElement('td');
+        numberCell.textContent = rowIndex + 1;
+        tableRow.appendChild(numberCell);
+
         row.forEach((cell, cellIndex) => {
             const tableCell = document.createElement('td');
             const inputField = document.createElement('input');
@@ -71,24 +96,18 @@ function generateTable(data) {
             inputField.value = cell;
             inputField.setAttribute('data-row', rowIndex + 1);
             inputField.setAttribute('data-col', cellIndex);
-            
+
             inputField.setAttribute('draggable', true);
             inputField.addEventListener('dragstart', handleDragStart, false);
             inputField.addEventListener('dragover', handleDragOver, false);
             inputField.addEventListener('drop', handleDrop, false);
 
-            // Append the input field to the table cell
             tableCell.appendChild(inputField);
-            // Append the table cell to the table row
             tableRow.appendChild(tableCell);
         });
 
-        // Append the table row to the table body
-        tableBody.appendChild(tableRow);
+        tBody.appendChild(tableRow);
     });
-
-    // Append the table body to the table
-    spreadsheetTable.appendChild(tableBody);
 }
 
 // Function to handle file input change
@@ -98,49 +117,48 @@ function handleFileInputChange(event) {
         const fileReader = new FileReader();
         fileReader.onload = function(event) {
             const content = event.target.result;
-            const data = parseCSV(content);
+
+            const delimiter = detectDelimiter(content);
+
+            detectedDelimiter.textContent = delimiter === '|' ? '|' : delimiter;
+            const data = parseText(content, delimiter);
             generateTable(data);
         };
         fileReader.readAsText(file);
     }
 }
 
-// Function to save the table data as a CSV file
+// Function to save the table data as a delimited file
 function saveToFile() {
+    const currentDelimiter = detectedDelimiter.textContent === '|' ? '|' : detectedDelimiter.textContent;
     let data = [];
-    
-    // Get all table rows
-    const tableRows = spreadsheetTable.querySelectorAll('tr');
-    
-    // Iterate over each row
-    tableRows.forEach((tableRow) => {
-        let row = [];
-        
-        // Get all input fields in the row
-        tableRow.querySelectorAll('input').forEach((inputField) => {
-            row.push(inputField.value);
-        });
-        
-        // Join the cell values with commas and add the row to the data array
-        data.push(row.join(','));
+
+    spreadsheetTable.querySelectorAll('thead tr th:nth-child(n+2) input').forEach(input => {
+        data.push(input.value);
     });
-    
-    // Convert the data array to CSV format
-    const csvContent = data.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const headerRow = data.join(currentDelimiter);
+    let rows = [headerRow];
+
+    spreadsheetTable.querySelectorAll('tbody tr').forEach(row => {
+        let rowData = [];
+        row.querySelectorAll('td:nth-child(n+2) input').forEach(cell => {
+            rowData.push(cell.value);
+        });
+        rows.push(rowData.join(currentDelimiter));
+    });
+
+    const content = rows.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    
-    // Create a temporary anchor element to initiate the download
     const downloadLink = document.createElement('a');
     downloadLink.href = url;
-    downloadLink.download = 'spreadsheet.csv';
+    const extension = currentDelimiter === '|' ? '.txt' : '.csv';
+    downloadLink.download = 'spreadsheet' + extension;
     downloadLink.click();
-    
-    // Revoke the object URL
     URL.revokeObjectURL(url);
 }
 
-// Drag and Drop event handlers
+// Drag-and-drop event handlers
 let dragged;
 
 function handleDragStart(event) {
@@ -165,8 +183,7 @@ function handleDrop(event) {
 fileInput.addEventListener('change', handleFileInputChange);
 saveButton.addEventListener('click', saveToFile);
 
-// Add drag and drop file loading feature
-// Prevent default behavior for dragover and drop
+// Add drag-and-drop file loading feature
 spreadsheetContainer.addEventListener('dragover', function(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -180,7 +197,11 @@ spreadsheetContainer.addEventListener('drop', function(event) {
         const fileReader = new FileReader();
         fileReader.onload = function(event) {
             const content = event.target.result;
-            const data = parseCSV(content);
+
+            const delimiter = detectDelimiter(content);
+
+            detectedDelimiter.textContent = delimiter === '|' ? '|' : delimiter;
+            const data = parseText(content, delimiter);
             generateTable(data);
         };
         fileReader.readAsText(file);
