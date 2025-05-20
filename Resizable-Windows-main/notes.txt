@@ -1,0 +1,113 @@
+.gitignore
+// unit testing - function by function to see if the function works as expected, test for passes and fails
+// integration testing - test the whole application to see if it works as expected, test for passes and fails 
+// end to end testing - test the whole application to see if it works as expected, test for passes and fails
+
+//Cypress and jest are the two most popular testing frameworks for javascript
+//Cypress is used for end to end testing and jest is used for unit testing
+
+//Put an Aria status in each of the assoc functions, use a span to put in the status
+//create func updateStatus and in the func update the inner html in the span so you dont have to worry about the aria status
+//use the span to update the status of the window
+
+// updateStatus("new status")
+ 
+// function updateStatus(newStatus = '') {
+// const span = document.getElementById('myStatusBar');
+// span.innerHTML = newStatus;
+// }
+
+//have a global status bar  then add additional status bars to each window in order to update the
+//status of only one window at a time
+//move the events that i am showing now, to the global status bar,
+//the sub status bar should only update events in the specific window
+
+//loading modules into windows, and then loading windows into the main function
+//windows should load and unload modules based on the user's actions
+//ie close window, then module is unloaded, create window, then module is loaded
+//have a button which opens and loads the balls game when pressed in its own window
+//  create windows button will just create empty windows
+
+//Explore how to work with real windows in the browser
+//have a pop out button which moves just the window to a new screen but only the content, no header or buttons
+//have a pop in button which moves the window back to the original screen
+
+
+//need a log within a child window of the parent so it will know what to do
+//need to have a way to communicate between the parent and child window
+//use post message javascript func to communicate between the parent and child window
+//post message is a way to send messages between windows
+//post message takes in a message, the origin of the message, and the target window
+//the origin is the url of the window that sent the message
+//the target window is the window that will receive the message
+//the target window can be the parent window or the child window
+//the parent window can send a message to the child window and vice versa
+//the child window can send a message to the parent window
+//the parent window can send a message to the child window
+
+//modal view controller - mvc
+//modal is a kind of data styling-- in this case its definition of data types like the window, width, heigjt, zindex etc
+//view is the graphics
+//controller is the functionality which is assoc with the programme.
+
+NEXT MODULE:
+//need to indent the css then encapsulate within its own scope
+//resizer issue is most likely an event issue, check how I am attaching the events
+//create another module which loads and unloads a registration form - name, address, email address, phone number, favourite colour.
+//button to fill form with dummy data, clear form, send to backend, pull from backend
+//In forms its important that you can load, read, and store data in memory. Be able to send the form to backend. 
+//Loads of free fake backends on the internet, research and choose one.
+
+//form needs to be flexible and form needs validation for all of the form inputs.
+//how many items in the form, input box, user picks, then that many items are created, 
+//create a set of buttons / dropdown which allows you to add as many input data points as you want
+//save the form locally as json by a button at the top and then a button to restore the form data
+//dont hard code anything let it flow
+//Make sure that you have KVPs - key value pairs
+
+//Consider validation for both english and german, the main issue will be phone number
+//First function is a drop which allows the user to select the country
+//based on that selection the validation of phone number shhould be different
+//For Germany it should take German country code etc
+//For English it should accept English speaking phone country codes US UK EIRE CAD etc
+//Also move the select field bar into the header
+
+Instead try making a definition of rules which is an array
+One function should digest the defined rules for the selected country within the dropdown,
+it should digest as many rules as possible 
+
+
+NEXT MODULE:
+Spreadsheet that is a table filled with fake data from the backend, lots of data is required
+it should be a loadable module by button in one of the purple windows
+
+
+READ: post message, testing - jest, Cypress, read about web pack for testing,
+MVC
+
+
+//create a Spreadsheet window, we wont to be able to laod file from an external source and save the data
+//All of the REGEXP validation should apply and it should format the cells properly based on this.
+//Need to acknowledge diacrytical characters so that when read and saved the code should not break
+//When reading and saving the file, Dialogue box required to see where to open and load the file
+//format of the Spreadsheet should be delimited format which is CSV
+//dont use libraries, create one simple format created by me
+//Should be able to enter any data in any cell. They should act like and accept any data in the cells
+//button that says save, button to open a file, be able to drag and drop file into the window and read the file
+
+//think about the layering and rendering, func should only be full when using that func, never do all of the 
+//functionality at the same time
+//functionality should only be on the currently dependent cells
+person is getting the impression everything is happening at the same but its not
+
+13/05
+Show the column headers as actual headers, maybe add the option for row headers like numbering on side.
+think about csv delimiter based on localisation 
+ 
+
+
+
+GOOD RESOURCES FOR LEARNING
+//chriscourses using pure js
+//webdevsimplified, very focused on hyped technologies
+
